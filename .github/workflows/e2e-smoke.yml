@@ -1,0 +1,71 @@
+name: E2E Smoke
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  e2e-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      E2E_ENFORCE_PERIOD_ASSERTIONS: "true"
+      E2E_FIXTURE_CONFIG_PATH: "scripts/e2e-fixture-config.json"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Seed E2E Fixture
+        run: node scripts/seed-e2e-fixture.mjs
+
+      - name: Start App
+        run: |
+          mkdir -p reports
+          nohup npm run dev -- --host 127.0.0.1 --port 5173 > reports/vite-ci.log 2>&1 &
+
+      - name: Wait for App
+        run: |
+          for i in {1..60}; do
+            if curl -sSf http://127.0.0.1:5173/login > /dev/null; then
+              echo "App is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "App failed to start"
+          exit 1
+
+      - name: Run E2E Smoke
+        run: node scripts/e2e-smoke.mjs
+
+      - name: Upload Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-smoke-reports
+          path: |
+            reports/
+            scripts/e2e-fixture-config.json
