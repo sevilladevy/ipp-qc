@@ -1,11 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  useEffect,
-  useRef,
-  type FormEvent,
-  type KeyboardEvent,
-  type RefObject,
-} from "react";
+import { memo, useEffect, useMemo, useRef, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 import { format } from "date-fns";
 import { AppLayout } from "@/components/AppLayout";
 import { DataTablePagination, DataTableShell, DataTableState } from "@/components/data-table";
@@ -22,7 +16,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useInspectionForm, useLogManagement, type Shift } from "@/hooks/useInspectionForm";
-import { fmtNum } from "@/lib/format";
+import { fmtNum, kategoriDefectColor } from "@/lib/format";
 import { exportToCsv, exportToPdf } from "@/lib/table-export";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -74,6 +68,54 @@ function getPassRate(row: { total_ok: number | null; qty_check: number }) {
   return row.qty_check > 0 ? (row.total_ok ?? 0) / row.qty_check : 0;
 }
 
+const DefectInput = memo(function DefectInput({
+  defectType,
+  value,
+  index,
+  totalDefects,
+  firstDefectRef,
+  submitRef,
+  updateDefect,
+}: {
+  defectType: { id: number; kode_defect: string; nama_defect: string };
+  value: number;
+  index: number;
+  totalDefects: number;
+  firstDefectRef: RefObject<HTMLInputElement | null>;
+  submitRef: RefObject<HTMLButtonElement | null>;
+  updateDefect: (kodeDefect: string, value: number) => void;
+}) {
+  return (
+    <Field label={defectType.nama_defect}>
+      <input
+        ref={index === 0 ? firstDefectRef : undefined}
+        type="number"
+        inputMode="numeric"
+        enterKeyHint={index < totalDefects - 1 ? "next" : "done"}
+        min={0}
+        value={value}
+        onChange={(e) => updateDefect(defectType.kode_defect, Number(e.target.value))}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          if (index >= totalDefects - 1) {
+            focusElement(submitRef);
+            return;
+          }
+          const container = e.currentTarget.closest(".defect-categories");
+          const allInputs = container?.querySelectorAll<HTMLInputElement>("input[type='number']");
+          const nextInput = allInputs?.[index + 1];
+          if (nextInput) {
+            nextInput.focus();
+            nextInput.select();
+          }
+        }}
+        className="input-field input-number"
+      />
+    </Field>
+  );
+});
+
 function InputPage() {
   const {
     formState,
@@ -99,6 +141,29 @@ function InputPage() {
     choosePart,
     handleSubmit,
   } = useInspectionForm();
+
+  const groupedDefects = useMemo(() => {
+    if (!defectTypes?.length) return [];
+    const groups: Record<string, typeof defectTypes> = {};
+    for (const dt of defectTypes) {
+      const cat = dt.kategori_defect ?? "Lainnya";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(dt);
+    }
+    return Object.entries(groups);
+  }, [defectTypes]);
+
+  // Flat index map for keyboard navigation across categories
+  const defectIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    let idx = 0;
+    for (const [, defects] of groupedDefects) {
+      for (const dt of defects) {
+        map.set(dt.kode_defect, idx++);
+      }
+    }
+    return map;
+  }, [groupedDefects]);
 
   const {
     logDate,
@@ -127,6 +192,7 @@ function InputPage() {
     handleSaveEdit,
     handleDelete,
     invalidateLogQueries,
+    canViewInputLog,
   } = useLogManagement();
 
   // Refs for keyboard navigation
@@ -168,7 +234,10 @@ function InputPage() {
   // Form submission handler
   function onSubmit(event: FormEvent) {
     event.preventDefault();
-    handleSubmit(invalidateLogQueries);
+    handleSubmit(() => {
+      invalidateLogQueries();
+      requestAnimationFrame(() => focusElement(shiftRef));
+    });
   }
 
   // Export functions
@@ -261,9 +330,9 @@ function InputPage() {
 
       <form
         onSubmit={onSubmit}
-        className="inspection-form grid items-start gap-6 xl:grid-cols-[1fr_400px]"
+        className="inspection-form grid items-start gap-6 lg:grid-cols-[1fr_minmax(380px,440px)]"
       >
-        <div className="space-y-6 xl:sticky xl:top-20">
+        <div className="space-y-6 lg:sticky lg:top-20">
           <div className="kpi-grid">
             <div className={cn("kpi-card", passRateStatus === "excellent" && "kpi-excellent")}>
               <div className="kpi-label">Pass Rate</div>
@@ -323,7 +392,12 @@ function InputPage() {
                 <select
                   ref={shiftRef}
                   value={formState.shift}
-                  onChange={(e) => updateField("shift", e.target.value as Shift)}
+                  onChange={(e) => {
+                    const shift = e.target.value as Shift;
+                    updateField("shift", shift);
+                    const defaults: Record<Shift, string> = { A: "07:00", B: "15:00", C: "23:00" };
+                    updateField("jamMulai", defaults[shift]);
+                  }}
                   onKeyDown={(e) => handleEnter(e, mejaRef)}
                   className="input-field"
                 >
@@ -359,62 +433,87 @@ function InputPage() {
                 </select>
               </Field>
 
-              <Field label="Part">
-                <Popover open={partOpen} onOpenChange={setPartOpen}>
-                  <PopoverTrigger asChild>
-                    <button
-                      ref={partTriggerRef}
-                      type="button"
-                      className={cn("input-field part-trigger", !formState.partName && "placeholder")}
+              <div className="field-full">
+                <Field label="Part">
+                  <Popover open={partOpen} onOpenChange={setPartOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        ref={partTriggerRef}
+                        type="button"
+                        className={cn(
+                          "input-field part-trigger",
+                          !formState.partName && "placeholder",
+                        )}
+                      >
+                        <span className="truncate">
+                          {formState.partName
+                            ? `${formState.partNo} - ${formState.partName}`
+                            : "Pilih part..."}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-[var(--radix-popover-trigger-width)] p-0"
+                      align="start"
                     >
-                      <span className="truncate">
-                        {formState.partName
-                          ? `${formState.partNo} - ${formState.partName}`
-                          : "Pilih part..."}
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-[var(--radix-popover-trigger-width)] p-0"
-                    align="start"
-                  >
-                    <Command shouldFilter={false}>
-                      <CommandInput
-                        ref={partSearchRef}
-                        value={partQuery}
-                        onValueChange={setPartQuery}
-                        placeholder="Cari part_no atau nama part..."
-                      />
-                      <CommandList className="max-h-72">
-                        <CommandEmpty>Part tidak ditemukan.</CommandEmpty>
-                        <CommandGroup>
-                          {visibleParts.map((part) => (
-                            <CommandItem
-                              key={part.id}
-                              value={part.part_no}
-                              onSelect={() => onChoosePart(part)}
-                            >
-                              <Check
-                                className={cn(
-                                  "h-4 w-4",
-                                  formState.partName === part.part_name ? "opacity-100" : "opacity-0",
-                                )}
-                              />
-                              <span className="truncate">
-                                {part.part_no} - {part.part_name}
-                              </span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </Field>
-            </div>
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          ref={partSearchRef}
+                          value={partQuery}
+                          onValueChange={setPartQuery}
+                          placeholder="Cari part_no atau nama part..."
+                        />
+                        <CommandList className="max-h-72">
+                          <CommandEmpty>Part tidak ditemukan.</CommandEmpty>
+                          <CommandGroup>
+                            {visibleParts.map((part) => (
+                              <CommandItem
+                                key={part.id}
+                                value={part.part_no}
+                                onSelect={() => onChoosePart(part)}
+                              >
+                                <Check
+                                  className={cn(
+                                    "h-4 w-4",
+                                    formState.partName === part.part_name
+                                      ? "opacity-100"
+                                      : "opacity-0",
+                                  )}
+                                />
+                                <span className="truncate">
+                                  {part.part_no} - {part.part_name}
+                                </span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </Field>
+              </div>
 
-            <div className="part-output-grid">
+              {formState.noMeja && activeParts.length > 0 && (
+                <div className="field-full">
+                  <div className="part-suggestions">
+                    <div className="suggestions-label">Part Default Meja {formState.noMeja}</div>
+                    <div className="suggestions-grid">
+                      {activeParts.slice(0, 8).map((part) => (
+                        <button
+                          key={part.id}
+                          type="button"
+                          onClick={() => onChoosePart(part)}
+                          className="suggestion-chip"
+                        >
+                          {part.part_no}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <Field label="Jam Mulai">
                 <input
                   ref={jamMulaiRef}
@@ -433,6 +532,15 @@ function InputPage() {
                   type="time"
                   value={formState.jamSelesai}
                   onChange={(e) => updateField("jamSelesai", e.target.value)}
+                  onBlur={() => {
+                    if (
+                      formState.jamMulai &&
+                      formState.jamSelesai &&
+                      formState.jamMulai >= formState.jamSelesai
+                    ) {
+                      toast.error("Jam Selesai harus setelah Jam Mulai");
+                    }
+                  }}
                   onKeyDown={(e) => handleEnter(e, qtyCheckRef)}
                   className="input-field"
                   required
@@ -443,18 +551,23 @@ function InputPage() {
                 <input
                   ref={qtyCheckRef}
                   type="number"
+                  inputMode="numeric"
+                  enterKeyHint="next"
                   min={0}
                   value={formState.qtyCheck}
                   onChange={(e) => {
                     const next = Math.max(0, Number(e.target.value));
                     updateField("qtyCheck", next);
                   }}
+                  onBlur={() => {
+                    if (formState.qtyCheck <= 0) {
+                      toast.error("Qty Check harus lebih dari 0");
+                    }
+                  }}
                   onKeyDown={(e) => {
                     if (e.key !== "Enter") return;
                     e.preventDefault();
-                    focusElement(
-                      Number(e.currentTarget.value) > 0 ? firstDefectRef : submitRef,
-                    );
+                    focusElement(Number(e.currentTarget.value) > 0 ? firstDefectRef : submitRef);
                   }}
                   className="input-field input-number"
                   required
@@ -484,39 +597,45 @@ function InputPage() {
                   <div>
                     <p className="alert-title">Defect count exceeds qty check</p>
                     <p className="alert-text">
-                      Gap: {totalDefects - formState.qtyCheck}. Total defects must not exceed qty check.
+                      Gap: {totalDefects - formState.qtyCheck}. Total defects must not exceed qty
+                      check.
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="defect-grid">
-                {defectTypes?.map((defectType, index) => (
-                  <Field key={defectType.id} label={defectType.nama_defect}>
-                    <input
-                      ref={index === 0 ? firstDefectRef : undefined}
-                      type="number"
-                      min={0}
-                      value={formState.defects[defectType.kode_defect] ?? 0}
-                      onChange={(e) =>
-                        updateDefect(defectType.kode_defect, Number(e.target.value))
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key !== "Enter") return;
-                        e.preventDefault();
-                        if (index === (defectTypes?.length ?? 1) - 1) {
-                          focusElement(submitRef);
-                          return;
-                        }
-                        const nextInput = e.currentTarget
-                          .closest(".defect-grid")
-                          ?.querySelectorAll<HTMLInputElement>("input[type='number']")[index + 1];
-                        nextInput?.focus();
-                        nextInput?.select();
-                      }}
-                      className="input-field input-number"
-                    />
-                  </Field>
+              <div className="defect-categories space-y-3">
+                {groupedDefects.map(([category, defects]) => (
+                  <div
+                    key={category}
+                    className="defect-category rounded-lg border border-border/60 bg-muted/10"
+                  >
+                    <div
+                      className={`flex items-center justify-between gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider ${kategoriDefectColor(category)}`}
+                    >
+                      <span>{category}</span>
+                      <span className="text-[10px] font-normal opacity-70">
+                        {defects.length} jenis
+                      </span>
+                    </div>
+                    <div className="defect-grid p-3">
+                      {defects.map((defectType) => {
+                        const flatIdx = defectIndexMap.get(defectType.kode_defect) ?? 0;
+                        return (
+                          <DefectInput
+                            key={defectType.id}
+                            defectType={defectType}
+                            value={formState.defects[defectType.kode_defect] ?? 0}
+                            index={flatIdx}
+                            totalDefects={defectTypes?.length ?? 0}
+                            firstDefectRef={firstDefectRef}
+                            submitRef={submitRef}
+                            updateDefect={updateDefect}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
                 ))}
               </div>
             </Card>
@@ -557,11 +676,7 @@ function InputPage() {
                 <Save className="h-4 w-4" />
                 {submitting ? "Saving..." : "Save Report"}
               </button>
-              <button
-                type="button"
-                onClick={() => resetForm(false)}
-                className="btn-secondary"
-              >
+              <button type="button" onClick={() => resetForm(false)} className="btn-secondary">
                 <RotateCcw className="h-4 w-4" />
                 Reset All
               </button>
@@ -570,10 +685,10 @@ function InputPage() {
         </div>
       </form>
 
-      {canManageInputLog && (
+      {canViewInputLog && (
         <DataTableShell
           title="Log Input Daily"
-          description={`${filteredLogRows.length} row ditampilkan dari ${(logQuery.data?.length ?? 0)} input pada ${logDate}`}
+          description={`${filteredLogRows.length} row ditampilkan dari ${logQuery.data?.length ?? 0} input pada ${logDate}`}
           actions={
             <>
               <button
@@ -649,14 +764,15 @@ function InputPage() {
                       <th className="px-3 py-3 text-left">Timestamp</th>
                       <th className="px-3 py-3 text-left">Meja</th>
                       <th className="px-3 py-3 text-left">Shift</th>
+                      <th className="px-3 py-3 text-left">Inspector</th>
                       <th className="px-3 py-3 text-left">Part</th>
                       <th className="px-3 py-3 text-right">Qty Check</th>
                       <th className="px-3 py-3 text-right">OK</th>
                       <th className="px-3 py-3 text-right">NG</th>
                       <th className="px-3 py-3 text-right">NG Rate</th>
-                      <th className="px-3 py-3 text-center">Edit</th>
+                      {canManageInputLog && <th className="px-3 py-3 text-center">Edit</th>}
                       <th className="px-3 py-3 text-center">View</th>
-                      <th className="px-3 py-3 text-center">Delete</th>
+                      {canManageInputLog && <th className="px-3 py-3 text-center">Delete</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -667,6 +783,7 @@ function InputPage() {
                         </td>
                         <td className="px-3 py-2.5 font-medium">Meja Inspeksi {row.no_meja}</td>
                         <td className="px-3 py-2.5">Shift {row.shift}</td>
+                        <td className="px-3 py-2.5">{row.inspectorName}</td>
                         <td className="px-3 py-2.5">
                           {row.part_no} - {row.part_name}
                         </td>
@@ -680,17 +797,19 @@ function InputPage() {
                         <td className="px-3 py-2.5 text-right">
                           {(getNgRate(row) * 100).toFixed(2)}%
                         </td>
-                        <td className="px-3 py-2.5 text-center">
-                          <button
-                            type="button"
-                            onClick={() => openEditLog(row)}
-                            className="inline-flex rounded p-1.5 text-info hover:bg-info/10"
-                            title="Edit log"
-                            aria-label="Edit log"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                        </td>
+                        {canManageInputLog && (
+                          <td className="px-3 py-2.5 text-center">
+                            <button
+                              type="button"
+                              onClick={() => openEditLog(row)}
+                              className="inline-flex rounded p-1.5 text-info hover:bg-info/10"
+                              title="Edit log"
+                              aria-label="Edit log"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                          </td>
+                        )}
                         <td className="px-3 py-2.5 text-center">
                           <button
                             type="button"
@@ -702,18 +821,20 @@ function InputPage() {
                             <Eye className="h-3.5 w-3.5" />
                           </button>
                         </td>
-                        <td className="px-3 py-2.5 text-center">
-                          <button
-                            type="button"
-                            onClick={() => setConfirmDelete(row)}
-                            disabled={deletingLogId === row.id}
-                            className="inline-flex rounded p-1.5 text-destructive hover:bg-destructive/10 disabled:opacity-40"
-                            title="Delete log"
-                            aria-label="Delete log"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </td>
+                        {canManageInputLog && (
+                          <td className="px-3 py-2.5 text-center">
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDelete(row)}
+                              disabled={deletingLogId === row.id}
+                              className="inline-flex rounded p-1.5 text-destructive hover:bg-destructive/10 disabled:opacity-40"
+                              title="Delete log"
+                              aria-label="Delete log"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>

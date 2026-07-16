@@ -87,17 +87,7 @@ function LaporanPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({
-    report_date: true,
-    shift: true,
-    no_meja: true,
-    part_name: true,
-    qty_check: true,
-    total_ok: true,
-    total_ng: true,
-    validation: true,
-    inspector_name: true,
-  });
+
   const [presets, setPresets] = useState<ReportPreset[]>(() => readPresets());
   const [presetName, setPresetName] = useState("");
   const safeDateRange = useMemo(
@@ -665,84 +655,56 @@ function LaporanPage() {
           </>
         ) : (
           <>
-            <div className="mb-2 flex flex-wrap gap-2 px-3 pt-3 text-xs">
-              {Object.entries(columnVisibility).map(([key, visible]) => (
-                <label key={key} className="chip-toggle">
-                  <input
-                    type="checkbox"
-                    checked={visible}
-                    onChange={(event) =>
-                      setColumnVisibility((prev) => ({ ...prev, [key]: event.target.checked }))
-                    }
-                  />
-                  {key}
-                </label>
-              ))}
-            </div>
             <div className="overflow-x-auto">
               <table className="table-pro w-full text-sm">
                 <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="px-3 py-3 text-left">No</th>
-                    {columnVisibility.report_date && (
-                      <th className="px-3 py-3 text-left">
-                        <SortableHeader
-                          label="Tanggal"
-                          active={sortKey === "report_date"}
-                          direction={sortDir}
-                          onClick={() => toggleSort("report_date")}
-                        />
-                      </th>
-                    )}
-                    {columnVisibility.shift && (
-                      <th className="px-3 py-3 text-left">
-                        <SortableHeader
-                          label="Shift"
-                          active={sortKey === "shift"}
-                          direction={sortDir}
-                          onClick={() => toggleSort("shift")}
-                        />
-                      </th>
-                    )}
-                    {columnVisibility.no_meja && (
-                      <th className="px-3 py-3 text-left">
-                        <SortableHeader
-                          label="Meja"
-                          active={sortKey === "no_meja"}
-                          direction={sortDir}
-                          onClick={() => toggleSort("no_meja")}
-                        />
-                      </th>
-                    )}
-                    {columnVisibility.part_name && (
-                      <th className="px-3 py-3 text-left">
-                        <SortableHeader
-                          label="Part"
-                          active={sortKey === "part_name"}
-                          direction={sortDir}
-                          onClick={() => toggleSort("part_name")}
-                        />
-                      </th>
-                    )}
-                    {columnVisibility.qty_check && (
-                      <th className="px-3 py-3 text-right">
-                        <SortableHeader
-                          label="Qty Check"
-                          active={sortKey === "qty_check"}
-                          direction={sortDir}
-                          onClick={() => toggleSort("qty_check")}
-                          align="right"
-                        />
-                      </th>
-                    )}
-                    {columnVisibility.total_ok && <th className="px-3 py-3 text-right">OK</th>}
-                    {columnVisibility.total_ng && <th className="px-3 py-3 text-right">NG</th>}
-                    {columnVisibility.validation && (
-                      <th className="px-3 py-3 text-left">Validation</th>
-                    )}
-                    {columnVisibility.inspector_name && (
-                      <th className="px-3 py-3 text-left">Inspector</th>
-                    )}
+                    <th className="px-3 py-3 text-left">
+                      <SortableHeader
+                        label="Tanggal"
+                        active={sortKey === "report_date"}
+                        direction={sortDir}
+                        onClick={() => toggleSort("report_date")}
+                      />
+                    </th>
+                    <th className="px-3 py-3 text-left">
+                      <SortableHeader
+                        label="Shift"
+                        active={sortKey === "shift"}
+                        direction={sortDir}
+                        onClick={() => toggleSort("shift")}
+                      />
+                    </th>
+                    <th className="px-3 py-3 text-left">
+                      <SortableHeader
+                        label="Meja"
+                        active={sortKey === "no_meja"}
+                        direction={sortDir}
+                        onClick={() => toggleSort("no_meja")}
+                      />
+                    </th>
+                    <th className="px-3 py-3 text-left">
+                      <SortableHeader
+                        label="Part"
+                        active={sortKey === "part_name"}
+                        direction={sortDir}
+                        onClick={() => toggleSort("part_name")}
+                      />
+                    </th>
+                    <th className="px-3 py-3 text-right">
+                      <SortableHeader
+                        label="Qty Check"
+                        active={sortKey === "qty_check"}
+                        direction={sortDir}
+                        onClick={() => toggleSort("qty_check")}
+                        align="right"
+                      />
+                    </th>
+                    <th className="px-3 py-3 text-right">OK</th>
+                    <th className="px-3 py-3 text-right">NG</th>
+                    <th className="px-3 py-3 text-left">Validation</th>
+                    <th className="px-3 py-3 text-left">Inspector</th>
                     <th className="px-3 py-3 text-center">Expand</th>
                   </tr>
                 </thead>
@@ -762,53 +724,35 @@ function LaporanPage() {
                           <td className="px-3 py-2.5 text-muted-foreground">
                             {(page - 1) * pageSize + index + 1}
                           </td>
-                          {columnVisibility.report_date && (
-                            <td className="px-3 py-2.5">{fmtDate(row.report_date)}</td>
-                          )}
-                          {columnVisibility.shift && (
-                            <td className="px-3 py-2.5">
-                              <Badge variant="info">{row.shift}</Badge>
-                            </td>
-                          )}
-                          {columnVisibility.no_meja && (
-                            <td className="px-3 py-2.5 font-medium">Meja Inspeksi {row.no_meja}</td>
-                          )}
-                          {columnVisibility.part_name && (
-                            <td className="px-3 py-2.5">
-                              <span className="font-medium">{row.part_name}</span>
-                            </td>
-                          )}
-                          {columnVisibility.qty_check && (
-                            <td className="px-3 py-2.5 text-right">{fmtNum(row.qty_check)}</td>
-                          )}
-                          {columnVisibility.total_ok && (
-                            <td className="px-3 py-2.5 text-right text-success">
-                              {fmtNum(row.total_ok)}
-                            </td>
-                          )}
-                          {columnVisibility.total_ng && (
-                            <td className="px-3 py-2.5 text-right text-destructive">
-                              {fmtNum(row.total_ng)}
-                            </td>
-                          )}
-                          {columnVisibility.validation && (
-                            <td className="px-3 py-2.5">
-                              <Badge
-                                variant={
-                                  row.validation.status === "good"
-                                    ? "success"
-                                    : row.validation.status === "warning"
-                                      ? "warning"
-                                      : "destructive"
-                                }
-                              >
-                                {row.validation.score}
-                              </Badge>
-                            </td>
-                          )}
-                          {columnVisibility.inspector_name && (
-                            <td className="px-3 py-2.5 text-xs">{row.inspector_name}</td>
-                          )}
+                          <td className="px-3 py-2.5">{fmtDate(row.report_date)}</td>
+                          <td className="px-3 py-2.5">
+                            <Badge variant="info">{row.shift}</Badge>
+                          </td>
+                          <td className="px-3 py-2.5 font-medium">Meja Inspeksi {row.no_meja}</td>
+                          <td className="px-3 py-2.5">
+                            <span className="font-medium">{row.part_name}</span>
+                          </td>
+                          <td className="px-3 py-2.5 text-right">{fmtNum(row.qty_check)}</td>
+                          <td className="px-3 py-2.5 text-right text-success">
+                            {fmtNum(row.total_ok)}
+                          </td>
+                          <td className="px-3 py-2.5 text-right text-destructive">
+                            {fmtNum(row.total_ng)}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <Badge
+                              variant={
+                                row.validation.status === "good"
+                                  ? "success"
+                                  : row.validation.status === "warning"
+                                    ? "warning"
+                                    : "destructive"
+                              }
+                            >
+                              {row.validation.score}
+                            </Badge>
+                          </td>
+                          <td className="px-3 py-2.5 text-xs">{row.inspector_name}</td>
                           <td className="px-3 py-2.5 text-center">
                             <button
                               className="inline-flex rounded p-1.5 text-info hover:bg-info/10"

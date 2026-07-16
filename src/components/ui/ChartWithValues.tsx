@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   BarChart,
   Bar,
@@ -92,7 +93,7 @@ const CHART_COLORS = [
   "var(--color-chart-5)",
 ];
 
-export function ChartWithValues({
+export const ChartWithValues = memo(function ChartWithValues({
   data,
   categories,
   series,
@@ -281,14 +282,22 @@ export function ChartWithValues({
   return (
     <div className={cn("min-w-0", className)}>
       {/* Accessible SVG title and description for screen readers */}
-      <svg className="sr-only" aria-labelledby={`${chartId}-title`} aria-describedby={`${chartId}-desc`}>
+      <svg
+        className="sr-only"
+        aria-labelledby={`${chartId}-title`}
+        aria-describedby={`${chartId}-desc`}
+      >
         <title id={`${chartId}-title`}>{ariaLabel ?? `${kind} chart showing ${xKey}`}</title>
         <desc id={`${chartId}-desc`}>
           {ariaDescription ??
             `Chart displaying ${seriesLabels}. X-axis: ${xKey}. Total data points: ${data.length}.`}
         </desc>
       </svg>
-      <div role="img" aria-label={ariaLabel} aria-describedby={ariaDescription ? `${chartId}-desc` : undefined}>
+      <div
+        role="img"
+        aria-label={ariaLabel}
+        aria-describedby={ariaDescription ? `${chartId}-desc` : undefined}
+      >
         <ResponsiveContainer width="100%" height={height}>
           {kind === "area"
             ? renderAreaChart()
@@ -299,4 +308,4 @@ export function ChartWithValues({
       </div>
     </div>
   );
-}
+});

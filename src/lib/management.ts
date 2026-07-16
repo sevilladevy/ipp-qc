@@ -292,3 +292,63 @@ export function formatValidationIssue(issue: ValidationIssue) {
       return "NG ada tetapi detail defect kosong";
   }
 }
+
+export function buildProductNgTrend(rows: EnrichedReport[], topN = 6) {
+  if (!rows.length) return { chartData: [], series: [], categories: [] };
+
+  const productTotals = aggregateBy(rows, "part_name")
+    .sort((a, b) => b.ng - a.ng)
+    .slice(0, topN);
+
+  const topProductSet = new Set(productTotals.map((p) => p.key));
+
+  const dateProductMap = new Map<string, Map<string, { qty: number; ng: number }>>();
+
+  for (const row of rows) {
+    if (!topProductSet.has(row.part_name)) continue;
+    if (!dateProductMap.has(row.report_date)) {
+      dateProductMap.set(row.report_date, new Map());
+    }
+    const productMap = dateProductMap.get(row.report_date)!;
+    if (!productMap.has(row.part_name)) {
+      productMap.set(row.part_name, { qty: 0, ng: 0 });
+    }
+    const acc = productMap.get(row.part_name)!;
+    acc.qty += row.qty_check;
+    acc.ng += row.total_ng;
+  }
+
+  const dates = [...dateProductMap.keys()].sort();
+
+  const chartData = dates.map((date) => {
+    const productMap = dateProductMap.get(date)!;
+    const entry: Record<string, unknown> = { date };
+    for (const product of productTotals) {
+      const stats = productMap.get(product.key);
+      entry[product.key] =
+        stats && stats.qty > 0 ? Number(((stats.ng / stats.qty) * 100).toFixed(2)) : 0;
+    }
+    return entry;
+  });
+
+  const colors = [
+    "var(--color-chart-1)",
+    "var(--color-chart-2)",
+    "var(--color-chart-3)",
+    "var(--color-chart-4)",
+    "var(--color-chart-5)",
+    "#8b5cf6",
+  ];
+
+  const series = productTotals.map((p, i) => ({
+    key: p.key,
+    color: colors[i % colors.length],
+  }));
+
+  const categories = productTotals.map((p) => ({
+    key: p.key,
+    label: p.key,
+  }));
+
+  return { chartData, series, categories };
+}

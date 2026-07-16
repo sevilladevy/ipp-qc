@@ -89,8 +89,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let active = true;
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!active) return;
+      if (event === "SIGNED_OUT" && !newSession) {
+        for (const key of Object.keys(localStorage)) {
+          if (key.startsWith("sb-")) localStorage.removeItem(key);
+        }
+      }
       setSession(newSession);
       setUser(newSession?.user ?? null);
     });
@@ -104,6 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch((error) => {
         console.error("Failed to load auth session", error);
+        for (const key of Object.keys(localStorage)) {
+          if (key.startsWith("sb-")) localStorage.removeItem(key);
+        }
       })
       .finally(() => {
         if (active) setAuthReady(true);

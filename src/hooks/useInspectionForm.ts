@@ -328,6 +328,7 @@ export function useLogManagement() {
   const today = format(new Date(), "yyyy-MM-dd");
   const { user, role } = useAuth();
   const canManageInputLog = isPrivilegedUser(role, user?.email);
+  const canViewInputLog = role === "supervisor" || role === "inspector";
   const qc = useQueryClient();
 
   // Log state
@@ -347,15 +348,22 @@ export function useLogManagement() {
   // Query
   const logQuery = useQuery({
     queryKey: QUERY_KEYS.INPUT_DAILY_LOG(logDate),
-    enabled: canManageInputLog,
+    enabled: canViewInputLog,
     queryFn: async () => {
+      let query = supabase
+        .from("inspection_reports")
+        .select(REPORT_COLUMNS)
+        .eq("report_date", logDate);
+
+      if (role === "inspector" && user?.id) {
+        query = query.eq("created_by", user.id);
+      }
+
+      query = query.order("created_at", { ascending: false });
+
       const [{ data: reports, error: reportError }, { data: profiles, error: profileError }] =
         await Promise.all([
-          supabase
-            .from("inspection_reports")
-            .select(REPORT_COLUMNS)
-            .eq("report_date", logDate)
-            .order("created_at", { ascending: false }),
+          query,
           supabase.from("profiles").select("id,full_name,email"),
         ]);
 
@@ -546,6 +554,7 @@ export function useLogManagement() {
     logTotalPages,
     today,
     canManageInputLog,
+    canViewInputLog,
 
     // Setters
     setLogDate,

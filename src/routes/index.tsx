@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -27,6 +27,7 @@ import {
   applyManagementFilters,
   buildDefectPareto,
   buildProfileLookup,
+  buildProductNgTrend,
   buildTrend,
   enrichReports,
   formatValidationIssue,
@@ -48,6 +49,77 @@ const CHART_COLORS = [
   "var(--color-chart-4)",
   "var(--color-chart-5)",
 ];
+
+const InspectorPerformanceSection = memo(function InspectorPerformanceSection({
+  summary,
+  chartData,
+  columns,
+}: {
+  summary: InspectorRow[];
+  chartData: { name: string; ngRate: number }[];
+  columns: RichColumn<InspectorRow>[];
+}) {
+  return (
+    <div className="grid gap-3 lg:grid-cols-2">
+      <RichTable<InspectorRow>
+        data={summary}
+        columns={columns}
+        keyExtractor={(r) => r.key}
+        compact
+        searchable
+        exportable
+        pageSize={10}
+        className="!rounded-xl !border-sky-100/80"
+      />
+      <div className="card-compact">
+        <div className="card-compact-header">Inspector NG Rate</div>
+        {chartData.length === 0 ? (
+          <EmptyState title="Belum ada data" />
+        ) : (
+          <ChartWithValues
+            data={chartData as unknown as Record<string, unknown>[]}
+            xKey="name"
+            categories={[{ key: "ngRate", label: "NG Rate (%)" }]}
+            series={[{ key: "ngRate", color: "var(--color-destructive)" }]}
+            kind="bar"
+            height={240}
+            showValues
+          />
+        )}
+      </div>
+    </div>
+  );
+});
+
+const ProductNgTrendSection = memo(function ProductNgTrendSection({
+  trend,
+}: {
+  trend: {
+    chartData: Record<string, unknown>[];
+    series: { key: string; color: string }[];
+    categories: { key: string; label: string }[];
+  };
+}) {
+  return (
+    <div className="card-compact">
+      <div className="card-compact-header">Product NG Rate Trend</div>
+      {trend.chartData.length === 0 ? (
+        <EmptyState title="Belum ada data" />
+      ) : (
+        <ChartWithValues
+          data={trend.chartData}
+          xKey="date"
+          categories={trend.categories}
+          series={trend.series}
+          kind="area"
+          height={260}
+          showValues={false}
+          showLegend
+        />
+      )}
+    </div>
+  );
+});
 
 function Dashboard() {
   const now = new Date();
@@ -203,6 +275,29 @@ function Dashboard() {
     [filteredRows],
   );
 
+  const inspectorSummary = useMemo(
+    () =>
+      aggregateBy(filteredRows, "inspector_name")
+        .filter((row) => row.key !== "Unknown")
+        .map((row) => ({
+          ...row,
+          avg_qty_per_report: row.reports > 0 ? row.qty_check / row.reports : 0,
+        }))
+        .sort((a, b) => b.ngRate - a.ngRate),
+    [filteredRows],
+  );
+
+  const inspectorChartData = useMemo(
+    () =>
+      inspectorSummary.slice(0, 10).map((row) => ({
+        name: row.key,
+        ngRate: Number((row.ngRate * 100).toFixed(1)),
+      })),
+    [inspectorSummary],
+  );
+
+  const productNgTrend = useMemo(() => buildProductNgTrend(filteredRows, 6), [filteredRows]);
+
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     const wasFetching = isFetchingRef.current;
@@ -337,6 +432,58 @@ function Dashboard() {
         sortable: true,
         align: "right",
         format: (v) => fmtNum(Number(v)),
+      },
+    ],
+    [],
+  );
+
+  const inspectorColumns: RichColumn<InspectorRow>[] = useMemo(
+    () => [
+      {
+        key: "inspector",
+        header: "Inspector",
+        accessor: (r) => r.key,
+        sortable: true,
+      },
+      {
+        key: "reports",
+        header: "Laporan",
+        accessor: (r) => r.reports,
+        sortable: true,
+        align: "right",
+        format: (v) => fmtNum(Number(v)),
+      },
+      {
+        key: "qty",
+        header: "Qty Check",
+        accessor: (r) => r.qty_check,
+        sortable: true,
+        align: "right",
+        format: (v) => fmtNum(Number(v)),
+      },
+      {
+        key: "ng",
+        header: "NG",
+        accessor: (r) => r.ng,
+        sortable: true,
+        align: "right",
+        format: (v) => fmtNum(Number(v)),
+      },
+      {
+        key: "ngRate",
+        header: "NG Rate",
+        accessor: (r) => r.ngRate,
+        sortable: true,
+        align: "right",
+        format: (v) => fmtPct(Number(v)),
+      },
+      {
+        key: "avgQty",
+        header: "Rata-rata/Lap",
+        accessor: (r) => r.avg_qty_per_report,
+        sortable: true,
+        align: "right",
+        format: (v) => fmtNum(Math.round(Number(v))),
       },
     ],
     [],
@@ -742,6 +889,13 @@ function Dashboard() {
           />
         </div>
       )}
+
+      <InspectorPerformanceSection
+        summary={inspectorSummary}
+        chartData={inspectorChartData}
+        columns={inspectorColumns}
+      />
+      <ProductNgTrendSection trend={productNgTrend} />
     </div>
   );
 }
@@ -755,4 +909,8 @@ type AggRow = {
   qualityScore: number;
   passRate: number;
   ngRate: number;
+};
+
+type InspectorRow = AggRow & {
+  avg_qty_per_report: number;
 };
