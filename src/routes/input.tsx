@@ -4,16 +4,25 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type FormEvent,
   type KeyboardEvent,
   type RefObject,
+  type ReactNode,
 } from "react";
 import { format } from "date-fns";
 import { AppLayout } from "@/components/AppLayout";
 import { DataTablePagination, DataTableShell, DataTableState } from "@/components/data-table";
 import { Card, EmptyState } from "@/components/ui-kit";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { Field, InputLogViewModal, InputLogEditModal } from "@/components/input";
+import {
+  Field,
+  InputLogViewModal,
+  InputLogEditModal,
+  SubmitConfirmModal,
+  SubmitSuccessModal,
+} from "@/components/input";
+import type { SaveSummary } from "@/hooks/useInspectionForm";
 import {
   Command,
   CommandEmpty,
@@ -146,6 +155,26 @@ const DefectInput = memo(function DefectInput({
   );
 });
 
+function KpiMini({
+  label,
+  value,
+  tone,
+  icon,
+}: {
+  label: string;
+  value: string;
+  tone?: "excellent" | "good" | "poor" | "success" | "warning" | "danger";
+  icon?: ReactNode;
+}) {
+  return (
+    <div className={cn("kpi-mini", tone && `kpi-${tone}`)}>
+      <span className="kpi-mini-label">{label}</span>
+      <span className="kpi-mini-value">{value}</span>
+      {icon && <span className="kpi-mini-icon">{icon}</span>}
+    </div>
+  );
+}
+
 function InputPage() {
   const {
     formState,
@@ -169,8 +198,21 @@ function InputPage() {
     setPartQuery,
     updateDefect,
     choosePart,
+    validate,
     handleSubmit,
   } = useInspectionForm();
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [success, setSuccess] = useState<SaveSummary | null>(null);
+
+  const handleSaveClick = () => {
+    const error = validate();
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    setConfirmOpen(true);
+  };
 
   const groupedDefects = useMemo(() => {
     if (!defectTypes?.length) return [];
@@ -226,7 +268,7 @@ function InputPage() {
   } = useLogManagement();
 
   // Refs for keyboard navigation
-  const shiftRef = useRef<HTMLSelectElement | null>(null);
+  const shiftRef = useRef<HTMLDivElement | null>(null);
   const mejaRef = useRef<HTMLSelectElement | null>(null);
   const partTriggerRef = useRef<HTMLButtonElement | null>(null);
   const partSearchRef = useRef<HTMLInputElement | null>(null);
@@ -262,13 +304,10 @@ function InputPage() {
     requestAnimationFrame(() => focusElement(partSearchRef));
   }, [partOpen, setPartQuery]);
 
-  // Form submission handler
+  // Form submission handler — open confirm modal (validate first)
   function onSubmit(event: FormEvent) {
     event.preventDefault();
-    handleSubmit(() => {
-      invalidateLogQueries();
-      requestAnimationFrame(() => focusElement(shiftRef));
-    });
+    handleSaveClick();
   }
 
   // Export functions
@@ -329,50 +368,33 @@ function InputPage() {
         </div>
       </section>
 
+      <div className="kpi-strip">
+        <KpiMini
+          label="Pass Rate"
+          value={`${(passRate * 100).toFixed(1)}%`}
+          tone={passRateStatus}
+          icon={passRate >= 0.98 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+        />
+        <KpiMini label="Qty Check" value={String(formState.qtyCheck)} icon={<Activity className="h-4 w-4" />} />
+        <KpiMini label="OK Parts" value={String(ok)} tone="success" icon={<Check className="h-4 w-4" />} />
+        <KpiMini
+          label="NG Parts"
+          value={String(totalDefects)}
+          tone={defectOverflow ? "warning" : undefined}
+          icon={defectOverflow ? <AlertTriangle className="h-4 w-4" /> : undefined}
+        />
+      </div>
+
       <form
         onSubmit={onSubmit}
-        className="inspection-form grid items-start gap-6 lg:grid-cols-[1fr_minmax(380px,440px)]"
+        className="inspection-form grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]"
       >
         <div className="space-y-6 lg:sticky lg:top-20">
-          <div className="kpi-grid">
-            <div className={cn("kpi-card", passRateStatus === "excellent" && "kpi-excellent")}>
-              <div className="kpi-label">Pass Rate</div>
-              <div className="kpi-value">{(passRate * 100).toFixed(1)}%</div>
-              <div className="kpi-subtitle">Persentase OK live</div>
-              {passRate >= 0.98 ? (
-                <TrendingUp className="kpi-icon" />
-              ) : (
-                <TrendingDown className="kpi-icon" />
-              )}
-            </div>
-
-            <div className="kpi-card">
-              <div className="kpi-label">Qty Check</div>
-              <div className="kpi-value">{formState.qtyCheck}</div>
-              <div className="kpi-subtitle">Total diperiksa</div>
-              <Activity className="kpi-icon" />
-            </div>
-
-            <div className="kpi-card kpi-success">
-              <div className="kpi-label">OK Parts</div>
-              <div className="kpi-value">{ok}</div>
-              <div className="kpi-subtitle">Auto dari qty - NG</div>
-              <Check className="kpi-icon" />
-            </div>
-
-            <div className={cn("kpi-card", totalDefects > 0 && "kpi-warning")}>
-              <div className="kpi-label">NG Parts</div>
-              <div className="kpi-value">{totalDefects}</div>
-              <div className="kpi-subtitle">Total defect terinput</div>
-              {defectOverflow && <AlertTriangle className="kpi-icon" />}
-            </div>
-          </div>
-
           <Card className="input-card">
             <div className="card-header">
               <div>
                 <div className="card-kicker">Core Input</div>
-                <h3 className="card-title">Inspection Context</h3>
+                <h3 className="card-title">Konteks Inspeksi</h3>
               </div>
             </div>
 
@@ -390,22 +412,22 @@ function InputPage() {
               </Field>
 
               <Field label="Shift">
-                <select
-                  ref={shiftRef}
-                  value={formState.shift}
-                  onChange={(e) => {
-                    const shift = e.target.value as Shift;
-                    updateField("shift", shift);
-                    const defaults: Record<Shift, string> = { A: "07:00", B: "15:00", C: "23:00" };
-                    updateField("jamMulai", defaults[shift]);
-                  }}
-                  onKeyDown={(e) => handleEnter(e, mejaRef)}
-                  className="input-field"
-                >
-                  <option value="A">Shift A</option>
-                  <option value="B">Shift B</option>
-                  <option value="C">Shift C</option>
-                </select>
+                <div ref={shiftRef} className="segmented" role="group" aria-label="Shift">
+                  {(["A", "B", "C"] as Shift[]).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => {
+                        updateField("shift", s);
+                        const defaults: Record<Shift, string> = { A: "07:00", B: "15:00", C: "23:00" };
+                        updateField("jamMulai", defaults[s]);
+                      }}
+                      className={cn("segmented-item", formState.shift === s && "active")}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </Field>
 
               <Field label="No Meja">
@@ -515,19 +537,32 @@ function InputPage() {
                 </div>
               )}
 
-              <Field label="Lot No.">
-                <input
-                  ref={lotNoRef}
-                  type="text"
-                  value={formState.lotNo || ""}
-                  onChange={(e) => updateField("lotNo", e.target.value)}
-                  onKeyDown={(e) => handleEnter(e, jamMulaiRef)}
-                  placeholder="Masukkan lot number..."
-                  className="input-field"
-                  maxLength={50}
-                />
-              </Field>
+              <div className="field-full">
+                <Field label="Lot No.">
+                  <input
+                    ref={lotNoRef}
+                    type="text"
+                    value={formState.lotNo || ""}
+                    onChange={(e) => updateField("lotNo", e.target.value)}
+                    onKeyDown={(e) => handleEnter(e, jamMulaiRef)}
+                    placeholder="Masukkan lot number..."
+                    className="input-field"
+                    maxLength={50}
+                  />
+                </Field>
+              </div>
+            </div>
+          </Card>
 
+          <Card className="input-card">
+            <div className="card-header">
+              <div>
+                <div className="card-kicker">Volume</div>
+                <h3 className="card-title">Waktu & Volume</h3>
+              </div>
+            </div>
+
+            <div className="input-grid">
               <Field label="Jam Mulai">
                 <input
                   ref={jamMulaiRef}
@@ -561,32 +596,34 @@ function InputPage() {
                 />
               </Field>
 
-              <Field label="Qty Check">
-                <input
-                  ref={qtyCheckRef}
-                  type="number"
-                  inputMode="numeric"
-                  enterKeyHint="next"
-                  min={0}
-                  value={formState.qtyCheck}
-                  onChange={(e) => {
-                    const next = Math.max(0, Number(e.target.value));
-                    updateField("qtyCheck", next);
-                  }}
-                  onBlur={() => {
-                    if (formState.qtyCheck <= 0) {
-                      toast.error("Qty Check harus lebih dari 0");
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key !== "Enter") return;
-                    e.preventDefault();
-                    focusElement(Number(e.currentTarget.value) > 0 ? firstDefectRef : submitRef);
-                  }}
-                  className="input-field input-number"
-                  required
-                />
-              </Field>
+              <div className="field-full">
+                <Field label="Qty Check">
+                  <input
+                    ref={qtyCheckRef}
+                    type="number"
+                    inputMode="numeric"
+                    enterKeyHint="next"
+                    min={0}
+                    value={formState.qtyCheck}
+                    onChange={(e) => {
+                      const next = Math.max(0, Number(e.target.value));
+                      updateField("qtyCheck", next);
+                    }}
+                    onBlur={() => {
+                      if (formState.qtyCheck <= 0) {
+                        toast.error("Qty Check harus lebih dari 0");
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter") return;
+                      e.preventDefault();
+                      focusElement(Number(e.currentTarget.value) > 0 ? firstDefectRef : submitRef);
+                    }}
+                    className="input-field input-number"
+                    required
+                  />
+                </Field>
+              </div>
             </div>
           </Card>
         </div>
@@ -665,7 +702,7 @@ function InputPage() {
             </Card>
           )}
 
-          <Card className="action-card">
+          <Card className="action-card hidden lg:block">
             <div className={cn("status-badge", defectOverflow ? "error" : "success")}>
               {defectOverflow ? (
                 <>
@@ -698,6 +735,30 @@ function InputPage() {
           </Card>
         </div>
       </form>
+
+      <div className="mobile-action-bar lg:hidden">
+        <div className={cn("status-badge", defectOverflow ? "error" : "success")}>
+          {defectOverflow ? (
+            <AlertTriangle className="h-4 w-4" />
+          ) : (
+            <Check className="h-4 w-4" />
+          )}
+          {defectOverflow ? "NG > Qty" : "Ready"}
+        </div>
+        <button type="button" onClick={() => resetForm(false)} className="btn-secondary flex-1">
+          <RotateCcw className="h-4 w-4" />
+          Reset
+        </button>
+        <button
+          type="button"
+          onClick={handleSaveClick}
+          disabled={submitting || formState.qtyCheck <= 0 || defectOverflow}
+          className="btn-primary flex-1"
+        >
+          <Save className="h-4 w-4" />
+          {submitting ? "Saving..." : "Save"}
+        </button>
+      </div>
 
       {canViewInputLog && (
         <DataTableShell
@@ -908,6 +969,35 @@ function InputPage() {
           setConfirmDelete(null);
         }}
       />
+
+      <SubmitConfirmModal
+        open={confirmOpen}
+        date={formState.date}
+        shift={formState.shift}
+        noMeja={formState.noMeja}
+        partNo={formState.partNo}
+        partName={formState.partName}
+        lotNo={formState.lotNo}
+        jamMulai={formState.jamMulai}
+        jamSelesai={formState.jamSelesai}
+        qtyCheck={formState.qtyCheck}
+        defects={formState.defects}
+        defectTypes={defectTypes}
+        totalNg={totalDefects}
+        ok={ok}
+        passRate={passRate}
+        submitting={submitting}
+        onConfirm={() =>
+          handleSubmit((summary) => {
+            setConfirmOpen(false);
+            setSuccess(summary);
+            invalidateLogQueries();
+          })
+        }
+        onCancel={() => setConfirmOpen(false)}
+      />
+
+      <SubmitSuccessModal open={success !== null} summary={success} onClose={() => setSuccess(null)} />
     </div>
   );
 }

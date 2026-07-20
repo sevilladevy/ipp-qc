@@ -14,6 +14,16 @@ import type { Tables } from "@/integrations/supabase/types";
 
 export type Shift = "A" | "B" | "C";
 
+export type SaveSummary = {
+  partNo: string;
+  partName: string;
+  lotNo: string | null;
+  qtyCheck: number;
+  ok: number;
+  ng: number;
+  passRate: number;
+};
+
 export type InspectionFormState = {
   date: string;
   shift: Shift;
@@ -193,39 +203,27 @@ export function useInspectionForm() {
     }));
   }, []);
 
+  const validate = useCallback((): string | null => {
+    if (formState.date > today) return "Tanggal tidak boleh di masa depan";
+    if (!selectedPart) return "Pilih part dari master data";
+    if (!formState.noMeja) return "Pilih meja inspeksi";
+    if (!formState.jamMulai.trim()) return "Jam mulai wajib diisi";
+    if (!formState.jamSelesai.trim()) return "Jam selesai wajib diisi";
+    if (formState.qtyCheck <= 0) return "Qty check harus > 0";
+    if (defectOverflow) {
+      return `Total defect (${totalDefects}) tidak boleh lebih besar dari Qty Check (${formState.qtyCheck})`;
+    }
+    return null;
+  }, [formState, selectedPart, defectOverflow, totalDefects, today]);
+
   const handleSubmit = useCallback(
-    async (onSuccess?: () => void) => {
+    async (onSuccess?: (summary: SaveSummary) => void) => {
+      const error = validate();
+      if (error) {
+        toast.error(error);
+        return;
+      }
       if (!user) return;
-      if (formState.date > today) {
-        toast.error("Tanggal tidak boleh di masa depan");
-        return;
-      }
-      if (!selectedPart) {
-        toast.error("Pilih part dari master data");
-        return;
-      }
-      if (!formState.noMeja) {
-        toast.error("Pilih meja inspeksi");
-        return;
-      }
-      if (!formState.jamMulai.trim()) {
-        toast.error("Jam mulai wajib diisi");
-        return;
-      }
-      if (!formState.jamSelesai.trim()) {
-        toast.error("Jam selesai wajib diisi");
-        return;
-      }
-      if (formState.qtyCheck <= 0) {
-        toast.error("Qty check harus > 0");
-        return;
-      }
-      if (defectOverflow) {
-        toast.error(
-          `Total defect (${totalDefects}) tidak boleh lebih besar dari Qty Check (${formState.qtyCheck})`,
-        );
-        return;
-      }
 
       setSubmitting(true);
 
@@ -235,8 +233,8 @@ export function useInspectionForm() {
             date: formState.date,
             shift: formState.shift,
             noMeja: Number(formState.noMeja),
-            partNo: selectedPart.part_no,
-            partName: selectedPart.part_name,
+            partNo: selectedPart!.part_no,
+            partName: selectedPart!.part_name,
             lotNo: formState.lotNo,
             qtyCheck: formState.qtyCheck,
             jamMulai: formState.jamMulai,
@@ -244,9 +242,18 @@ export function useInspectionForm() {
             defects: formState.defects,
           },
         });
+        const summary: SaveSummary = {
+          partNo: selectedPart!.part_no,
+          partName: selectedPart!.part_name,
+          lotNo: formState.lotNo || null,
+          qtyCheck: formState.qtyCheck,
+          ok: ok,
+          ng: totalDefects,
+          passRate: passRate,
+        };
         toast.success("Laporan tersimpan");
         resetForm(true);
-        onSuccess?.();
+        onSuccess?.(summary);
       } catch (error) {
         if (error instanceof Response) {
           const text = await error.text();
@@ -264,7 +271,7 @@ export function useInspectionForm() {
         setSubmitting(false);
       }
     },
-    [user, formState, selectedPart, defectOverflow, totalDefects, today, resetForm],
+    [user, validate, selectedPart, formState, ok, totalDefects, passRate, resetForm],
   );
 
   return {
@@ -293,6 +300,7 @@ export function useInspectionForm() {
     setPartQuery,
     updateDefect,
     choosePart,
+    validate,
     handleSubmit,
   };
 }
