@@ -22,7 +22,9 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
 
     if (DEMO_MODE && demoUserId && (demoRole === "inspector" || demoRole === "supervisor")) {
       const supabase = createClient<Database>(SUPABASE_URL!, SUPABASE_PUBLISHABLE_KEY!);
-      return next({ context: { supabase, userId: demoUserId, demoMode: true, role: demoRole } as never });
+      return next({
+        context: { supabase, userId: demoUserId, demoMode: true, role: demoRole } as never,
+      });
     }
 
     const authHeader = request.headers.get("authorization");

@@ -48,7 +48,7 @@ test.describe("Input Page", () => {
     await expect(dateInput).toBeVisible();
 
     // Fill shift
-    await page.selectOption('select:has(#shift)', "A").catch(() => {
+    await page.selectOption("select:has(#shift)", "A").catch(() => {
       // If specific selector doesn't work, try generic
     });
 
@@ -104,6 +104,8 @@ test.describe("Input Page", () => {
     await page.click('button:has-text("Save Report")');
 
     // Error should appear
-    await expect(page.locator("text=Pilih meja inspeksi").or(page.locator("text=Part No wajib"))).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.locator("text=Pilih meja inspeksi").or(page.locator("text=Part No wajib")),
+    ).toBeVisible({ timeout: 5000 });
   });
 });

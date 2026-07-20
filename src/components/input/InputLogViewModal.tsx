@@ -3,7 +3,7 @@ import { fmtNum } from "@/lib/format";
 import { LogInfo } from "./LogInfo";
 import { LogMetric } from "./LogMetric";
 import { DEFECT_COLUMNS } from "@/lib/format";
-import type { InputLogRow } from "@/hooks/useInspectionForm";
+import type { InputLogRow } from "@/hooks/useLogManagement";
 
 type DefectDetail = Record<string, unknown>;
 

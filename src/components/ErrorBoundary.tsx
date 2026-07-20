@@ -123,7 +123,7 @@ export class ErrorBoundary extends Component<Props, State> {
       componentStack: errorInfo.componentStack ?? undefined,
       timestamp: this.state.timestamp ?? Date.now(),
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-      url: typeof window !== "undefined" ? (window.location.href || undefined) : undefined,
+      url: typeof window !== "undefined" ? window.location.href || undefined : undefined,
     };
     sendErrorReport(report);
   }
@@ -175,7 +175,8 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="space-y-2">
             <h2 className="text-xl font-semibold text-foreground">Terjadi Kesalahan</h2>
             <p className="max-w-md text-sm text-muted-foreground">
-              Maaf, terjadi kesalahan yang tidak terduga. Tim kami telah notified tentang masalah ini.
+              Maaf, terjadi kesalahan yang tidak terduga. Tim kami telah notified tentang masalah
+              ini.
             </p>
           </div>
 
@@ -228,9 +229,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 {/* Technical details */}
                 <div className="rounded-md bg-muted p-3">
                   {formattedDate && (
-                    <p className="mb-2 text-xs text-muted-foreground">
-                      Waktu: {formattedDate}
-                    </p>
+                    <p className="mb-2 text-xs text-muted-foreground">Waktu: {formattedDate}</p>
                   )}
                   {error?.stack && showDevDetails && (
                     <pre className="max-h-48 overflow-auto text-xs text-muted-foreground whitespace-pre-wrap">
@@ -255,9 +254,7 @@ export class ErrorBoundary extends Component<Props, State> {
           {/* Contact support */}
           <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
             <Mail className="h-3 w-3" />
-            <span>
-              Hubungi support dengan menyertakan Error ID jika masalah persists
-            </span>
+            <span>Hubungi support dengan menyertakan Error ID jika masalah persists</span>
           </div>
 
           {/* Version info */}

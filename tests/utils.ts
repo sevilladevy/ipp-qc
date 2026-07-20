@@ -1,41 +1,30 @@
-/**
- * Test utilities for E2E tests
- */
+import type { APIResponse, ConsoleMessage, Page } from "@playwright/test";
 
 /**
  * Wait for a specific response from the network
  */
 export async function waitForResponse(
-  page: any,
+  page: Page,
   urlPattern: RegExp,
   timeout = 10000,
-): Promise<any> {
-  return page.waitForResponse(
-    (response: any) => urlPattern.test(response.url()),
-    { timeout },
-  );
+): Promise<APIResponse> {
+  return page.waitForResponse((response: APIResponse) => urlPattern.test(response.url()), {
+    timeout,
+  });
 }
 
 /**
  * Wait for API calls to complete
  */
-export async function waitForApiCalls(page: any, timeout = 10000): Promise<void> {
+export async function waitForApiCalls(page: Page, timeout = 10000): Promise<void> {
   // Wait for inspection_reports
-  await waitForResponse(
-    page,
-    /\/rest\/v1\/inspection_reports/,
-    timeout,
-  ).catch(() => null);
+  await waitForResponse(page, /\/rest\/v1\/inspection_reports/, timeout).catch(() => null);
 }
 
 /**
  * Fill form fields with validation
  */
-export async function fillAndValidate(
-  page: any,
-  selector: string,
-  value: string,
-): Promise<void> {
+export async function fillAndValidate(page: Page, selector: string, value: string): Promise<void> {
   await page.fill(selector, value);
   // Wait for any validation to complete
   await page.waitForTimeout(100);
@@ -44,9 +33,9 @@ export async function fillAndValidate(
 /**
  * Check for console errors
  */
-export function collectConsoleErrors(page: any): Promise<string[]> {
+export function collectConsoleErrors(page: Page): Promise<string[]> {
   const errors: string[] = [];
-  page.on("console", (msg: any) => {
+  page.on("console", (msg: ConsoleMessage) => {
     if (msg.type() === "error") {
       errors.push(msg.text());
     }
@@ -58,7 +47,7 @@ export function collectConsoleErrors(page: any): Promise<string[]> {
  * Take screenshot on failure
  */
 export async function screenshotOnFailure(
-  page: any,
+  page: Page,
   name: string,
   dir = "reports/screenshots",
 ): Promise<void> {
@@ -71,11 +60,7 @@ export async function screenshotOnFailure(
 /**
  * Login helper
  */
-export async function login(
-  page: any,
-  email: string,
-  password: string,
-): Promise<void> {
+export async function login(page: Page, email: string, password: string): Promise<void> {
   await page.goto("/login");
   await page.fill('input[type="email"]', email);
   await page.fill('input[type="password"]', password);
@@ -86,7 +71,7 @@ export async function login(
 /**
  * Logout helper
  */
-export async function logout(page: any): Promise<void> {
+export async function logout(page: Page): Promise<void> {
   await page.click('button[title="Logout"]');
   await page.waitForSelector('input[type="email"]');
 }

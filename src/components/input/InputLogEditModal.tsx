@@ -3,7 +3,8 @@ import { fmtNum } from "@/lib/format";
 import { LogMetric } from "./LogMetric";
 import { EditField } from "./EditField";
 import type { FormEvent } from "react";
-import type { InputLogRow, EditLogForm as EditLogFormType, Shift } from "@/hooks/useInspectionForm";
+import type { Shift } from "@/hooks/useInspectionForm";
+import type { InputLogRow, EditLogForm as EditLogFormType } from "@/hooks/useLogManagement";
 
 function formatTimestamp(value: string | null | undefined) {
   if (!value) return "-";

@@ -12,27 +12,21 @@ export const QUERY_KEYS = {
   INSPECTION_TABLES: ["inspection_tables"] as const,
   PARTS: ["parts"] as const,
   DEFECT_TYPES: ["defect_types"] as const,
-  TABLE_DEFAULT_PARTS: (noMeja: number | null) =>
-    ["table-default-parts", noMeja] as const,
+  TABLE_DEFAULT_PARTS: (noMeja: number | null) => ["table-default-parts", noMeja] as const,
   DEFAULT_PARTS_BY_TABLE: ["default-parts-by-table"] as const,
 
   // Dashboard & Analytics
-  DASHBOARD: (from: string, to: string) =>
-    ["dashboard-management", from, to] as const,
-  ANALYTICS: (from: string, to: string) =>
-    ["analytics-management", from, to] as const,
+  DASHBOARD: (from: string, to: string) => ["dashboard-management", from, to] as const,
+  ANALYTICS: (from: string, to: string) => ["analytics-management", from, to] as const,
 
   // Reports
-  REPORT_MANAGEMENT: (from: string, to: string) =>
-    ["report-management", from, to] as const,
+  REPORT_MANAGEMENT: (from: string, to: string) => ["report-management", from, to] as const,
 
   // Input
-  INPUT_DAILY_LOG: (date: string) =>
-    ["input-daily-log", date] as const,
+  INPUT_DAILY_LOG: (date: string) => ["input-daily-log", date] as const,
 
   // Defects
-  DEFECTS: (reportIds: string[]) =>
-    ["defects", ...reportIds.sort()] as const,
+  DEFECTS: (reportIds: string[]) => ["defects", ...reportIds.sort()] as const,
 } as const;
 
 // Local storage keys

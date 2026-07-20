@@ -54,9 +54,13 @@ test.describe("Dashboard", () => {
 
   test("should filter by meja", async ({ page }) => {
     // Open meja dropdown
-    await page.locator("select").first().selectOption({ index: 1 }).catch(() => {
-      // If select not available, skip
-    });
+    await page
+      .locator("select")
+      .first()
+      .selectOption({ index: 1 })
+      .catch(() => {
+        // If select not available, skip
+      });
 
     // Wait for data to reload
     await page.waitForTimeout(2000);

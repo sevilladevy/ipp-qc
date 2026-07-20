@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 export const attachAuthHeader = createMiddleware({ type: "function" }).client(async ({ next }) => {
   try {
     // Check for demo session
-    const demoSessionRaw = typeof window !== "undefined" ? sessionStorage.getItem("demo_session") : null;
+    const demoSessionRaw =
+      typeof window !== "undefined" ? sessionStorage.getItem("demo_session") : null;
     if (demoSessionRaw) {
       try {
         const { role } = JSON.parse(demoSessionRaw);
@@ -16,11 +17,15 @@ export const attachAuthHeader = createMiddleware({ type: "function" }).client(as
             "x-demo-user-role": role,
           },
         });
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
 
     // Normal Supabase auth
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     return next({
       headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
     });

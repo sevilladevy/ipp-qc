@@ -1,5 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { memo, useEffect, useMemo, useRef, type FormEvent, type KeyboardEvent, type RefObject } from "react";
+import {
+  memo,
+  useEffect,
+  useMemo,
+  useRef,
+  type FormEvent,
+  type KeyboardEvent,
+  type RefObject,
+} from "react";
 import { format } from "date-fns";
 import { AppLayout } from "@/components/AppLayout";
 import { DataTablePagination, DataTableShell, DataTableState } from "@/components/data-table";
@@ -15,7 +23,8 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useInspectionForm, useLogManagement, type Shift } from "@/hooks/useInspectionForm";
+import { useInspectionForm, type Shift } from "@/hooks/useInspectionForm";
+import { useLogManagement, type InputLogRow } from "@/hooks/useLogManagement";
 import { fmtNum, kategoriDefectColor } from "@/lib/format";
 import { exportToCsv, exportToPdf } from "@/lib/table-export";
 import { cn } from "@/lib/utils";
@@ -67,6 +76,27 @@ function getNgRate(row: { total_ng: number; qty_check: number }) {
 function getPassRate(row: { total_ok: number | null; qty_check: number }) {
   return row.qty_check > 0 ? (row.total_ok ?? 0) / row.qty_check : 0;
 }
+
+const EXPORT_COLUMNS = [
+  {
+    key: "created_at",
+    label: "Timestamp",
+    format: (row: InputLogRow) => formatTimestamp(row.created_at),
+  },
+  { key: "no_meja", label: "Meja", format: (row: InputLogRow) => `Meja Inspeksi ${row.no_meja}` },
+  { key: "qty_check", label: "Qty Check", format: (row: InputLogRow) => row.qty_check },
+  { key: "total_ng", label: "NG", format: (row: InputLogRow) => row.total_ng },
+  {
+    key: "ng_rate",
+    label: "NG Rate",
+    format: (row: InputLogRow) => `${(getNgRate(row) * 100).toFixed(2)}%`,
+  },
+  {
+    key: "pass_rate",
+    label: "Pass Rate",
+    format: (row: InputLogRow) => `${(getPassRate(row) * 100).toFixed(2)}%`,
+  },
+];
 
 const DefectInput = memo(function DefectInput({
   defectType,
@@ -229,7 +259,7 @@ function InputPage() {
       return;
     }
     requestAnimationFrame(() => focusElement(partSearchRef));
-  }, [partOpen]);
+  }, [partOpen, setPartQuery]);
 
   // Form submission handler
   function onSubmit(event: FormEvent) {
@@ -247,22 +277,7 @@ function InputPage() {
     exportToCsv({
       filename: `log-input-daily-${logDate}`,
       rows: filteredLogRows,
-      columns: [
-        { key: "created_at", label: "Timestamp", format: (row) => formatTimestamp(row.created_at) },
-        { key: "no_meja", label: "Meja", format: (row) => `Meja Inspeksi ${row.no_meja}` },
-        { key: "qty_check", label: "Qty Check", format: (row) => row.qty_check },
-        { key: "total_ng", label: "NG", format: (row) => row.total_ng },
-        {
-          key: "ng_rate",
-          label: "NG Rate",
-          format: (row) => `${(getNgRate(row) * 100).toFixed(2)}%`,
-        },
-        {
-          key: "pass_rate",
-          label: "Pass Rate",
-          format: (row) => `${(getPassRate(row) * 100).toFixed(2)}%`,
-        },
-      ],
+      columns: EXPORT_COLUMNS,
     });
     toast.success("CSV log input berhasil diexport");
   }
@@ -274,22 +289,7 @@ function InputPage() {
       filename: `log-input-daily-${logDate}`,
       title: `Log Input Daily - ${logDate}`,
       rows: filteredLogRows,
-      columns: [
-        { key: "created_at", label: "Timestamp", format: (row) => formatTimestamp(row.created_at) },
-        { key: "no_meja", label: "Meja", format: (row) => `Meja Inspeksi ${row.no_meja}` },
-        { key: "qty_check", label: "Qty Check", format: (row) => row.qty_check },
-        { key: "total_ng", label: "NG", format: (row) => row.total_ng },
-        {
-          key: "ng_rate",
-          label: "NG Rate",
-          format: (row) => `${(getNgRate(row) * 100).toFixed(2)}%`,
-        },
-        {
-          key: "pass_rate",
-          label: "Pass Rate",
-          format: (row) => `${(getPassRate(row) * 100).toFixed(2)}%`,
-        },
-      ],
+      columns: EXPORT_COLUMNS,
     });
     toast.success("PDF log input berhasil diexport");
   }

@@ -17,13 +17,7 @@ export function SkeletonCard({ className }: { className?: string }) {
   );
 }
 
-export function SkeletonTable({
-  rows = 5,
-  columns = 5,
-}: {
-  rows?: number;
-  columns?: number;
-}) {
+export function SkeletonTable({ rows = 5, columns = 5 }: { rows?: number; columns?: number }) {
   return (
     <div className="rounded-xl border border-sky-100/80 bg-white/90 p-4">
       <div className="mb-3 flex gap-4">
@@ -77,10 +71,7 @@ export function SkeletonGrid({
   const gridClass = cols === 1 ? "grid-cols-1" : cols === 2 ? "lg:grid-cols-2" : "lg:grid-cols-3";
   return (
     <div className={`grid gap-4 ${gridClass}`}>
-      {children ??
-        Array.from({ length: count }).map((_, i) => (
-          <SkeletonCard key={i} />
-        ))}
+      {children ?? Array.from({ length: count }).map((_, i) => <SkeletonCard key={i} />)}
     </div>
   );
 }

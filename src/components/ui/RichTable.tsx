@@ -144,9 +144,7 @@ export function RichTable<T>({
       columns: visibleCols.map((col) => ({
         key: col.key,
         label: col.header,
-        format: col.format
-          ? (row: unknown) => col.format!(col.accessor(row as T))
-          : undefined,
+        format: col.format ? (row: unknown) => col.format!(col.accessor(row as T)) : undefined,
       })),
       rows: sorted,
     });
