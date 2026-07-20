@@ -27,7 +27,7 @@ export type SaveSummary = {
 export type InspectionFormState = {
   date: string;
   shift: Shift;
-  no_meja: number | "";
+  noMeja: number | "";
   partNo: string;
   partName: string;
   jamMulai: string;
@@ -159,7 +159,8 @@ export function useInspectionForm() {
   const ok = Math.max(0, formState.qtyCheck - totalDefects);
   const passRate = formState.qtyCheck > 0 ? ok / formState.qtyCheck : 1;
   const defectOverflow = totalDefects > formState.qtyCheck;
-  const passRateStatus = passRate >= 0.98 ? "excellent" : passRate >= 0.95 ? "good" : "poor";
+  const passRateStatus: "excellent" | "good" | "poor" =
+    passRate >= 0.98 ? "excellent" : passRate >= 0.95 ? "good" : "poor";
 
   // Actions
   const updateField = useCallback(
