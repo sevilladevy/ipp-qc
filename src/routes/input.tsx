@@ -780,6 +780,7 @@ function InputPage() {
                       <th className="px-3 py-3 text-left">Shift</th>
                       <th className="px-3 py-3 text-left">Inspector</th>
                       <th className="px-3 py-3 text-left">Part</th>
+                      <th className="px-3 py-3 text-left">Lot No.</th>
                       <th className="px-3 py-3 text-right">Qty Check</th>
                       <th className="px-3 py-3 text-right">OK</th>
                       <th className="px-3 py-3 text-right">NG</th>
@@ -801,6 +802,7 @@ function InputPage() {
                         <td className="px-3 py-2.5">
                           {row.part_no} - {row.part_name}
                         </td>
+                        <td className="px-3 py-2.5 font-mono text-xs">{row.lot_no || "-"}</td>
                         <td className="px-3 py-2.5 text-right">{fmtNum(row.qty_check)}</td>
                         <td className="px-3 py-2.5 text-right text-success">
                           {fmtNum(row.total_ok ?? 0)}

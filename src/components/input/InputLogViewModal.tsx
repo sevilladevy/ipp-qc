@@ -66,6 +66,7 @@ export function InputLogViewModal({ row, onClose }: { row: InputLogRow; onClose:
             <LogInfo label="Shift" value={`Shift ${row.shift}`} />
             <LogInfo label="Meja" value={`Meja Inspeksi ${row.no_meja}`} />
             <LogInfo label="Part" value={`${row.part_no} - ${row.part_name}`} />
+            <LogInfo label="Lot No." value={row.lot_no || "-"} />
             <LogInfo label="Jam Mulai" value={row.jam_mulai ?? "-"} />
             <LogInfo label="Jam Selesai" value={row.jam_selesai ?? "-"} />
             <LogInfo label="Inspector" value={row.inspectorName} />

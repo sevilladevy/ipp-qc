@@ -19,7 +19,7 @@ export type ReportSummary = {
 };
 
 export const REPORT_COLUMNS =
-  "id,report_date,shift,no_meja,part_no,part_name,qty_check,total_ok,total_ng,created_by,created_at";
+  "id,report_date,shift,no_meja,part_no,part_name,qty_check,total_ok,total_ng,lot_no,created_by,created_at";
 const DEFECT_COLUMNS =
   "id,report_id,short_shot,lipat,burry,bending,dirty,kontaminasi,filter_bolong_rusak,shinning,silver,flow_mark,burn_mark,sink_mark,ejector_mark,gas_mark,crack,gap,dented,scratch,flash,double_inject,bubble,gate_long,gate_hole,over_cut,under_cut,black_dot,deform,weld_line,start_up_setting_alarm,extra_defects,created_at";
 

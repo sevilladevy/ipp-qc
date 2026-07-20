@@ -19,6 +19,7 @@ export type InputLogRow = {
   qty_check: number;
   total_ok: number | null;
   total_ng: number;
+  lot_no?: string | null;
   created_by: string | null;
   created_at: string;
   jam_mulai?: string;
@@ -114,6 +115,7 @@ export function useLogManagement() {
         row.shift,
         row.part_name,
         row.part_no,
+        row.lot_no ?? "",
         row.inspectorName,
         String(row.qty_check),
         String(row.total_ng),
