@@ -237,6 +237,7 @@ export function useInspectionForm() {
             noMeja: Number(formState.noMeja),
             partNo: selectedPart.part_no,
             partName: selectedPart.part_name,
+            lotNo: formState.lotNo,
             qtyCheck: formState.qtyCheck,
             jamMulai: formState.jamMulai,
             jamSelesai: formState.jamSelesai,

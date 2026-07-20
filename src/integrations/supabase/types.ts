@@ -194,6 +194,7 @@ export type Database = {
           jam_mulai: string;
           jam_selesai: string;
           no_meja: number;
+          lot_no: string | null;
           part_name: string;
           part_no: string;
           qty_check: number;
@@ -211,6 +212,7 @@ export type Database = {
           jam_mulai: string;
           jam_selesai: string;
           no_meja: number;
+          lot_no?: string | null;
           part_name: string;
           part_no: string;
           qty_check?: number;

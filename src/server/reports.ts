@@ -11,6 +11,7 @@ type InputPayload = {
   noMeja: number;
   partNo: string;
   partName: string;
+  lotNo: string;
   qtyCheck: number;
   jamMulai: string;
   jamSelesai: string;
@@ -79,6 +80,7 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
       no_meja: data.noMeja,
       part_no: data.partNo.trim(),
       part_name: part.part_name,
+      lot_no: data.lotNo?.trim() || null,
       qty_check: data.qtyCheck,
       total_ng: ng,
       jam_mulai: data.jamMulai,
