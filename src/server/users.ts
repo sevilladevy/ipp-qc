@@ -91,7 +91,7 @@ async function listAppUsers(supabase: AppSupabaseClient) {
 }
 
 export const listUsers = createServerFn({ method: "POST" })
-  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .handler(async ({ context }) => {
     const ctx = context as unknown as ServerContext;
     await assertSupervisor(ctx);
@@ -145,7 +145,7 @@ export const listUsers = createServerFn({ method: "POST" })
   });
 
 export const inviteUser = createServerFn({ method: "POST" })
-  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .inputValidator(
     (input: {
       email: string;
@@ -189,7 +189,7 @@ export const inviteUser = createServerFn({ method: "POST" })
   });
 
 export const promoteToSupervisor = createServerFn({ method: "POST" })
-  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .inputValidator((input: { userId: string }) => {
     if (!input.userId) throw new Response("userId wajib", { status: 400 });
     return input;
@@ -216,7 +216,7 @@ export const promoteToSupervisor = createServerFn({ method: "POST" })
   });
 
 export const deleteUser = createServerFn({ method: "POST" })
-  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .inputValidator((input: { userId: string }) => {
     if (!input.userId) throw new Response("userId wajib", { status: 400 });
     return input;

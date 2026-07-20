@@ -22,7 +22,7 @@ type DefectInsert = TablesInsert<"inspection_defect_details">;
 type ReportInsert = TablesInsert<"inspection_reports">;
 
 export const saveInspectionReport = createServerFn({ method: "POST" })
-  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .inputValidator((input: InputPayload) => {
     if (!input.date) throw new Response("Tanggal wajib diisi", { status: 400 });
     if (!input.noMeja) throw new Response("Pilih meja inspeksi", { status: 400 });
@@ -34,7 +34,8 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ context, data }) => {
-    const { data: meja, error: mejaError } = await context.supabase
+    const ctx = context as any;
+    const { data: meja, error: mejaError } = await ctx.supabase
       .from("inspection_tables")
       .select("no_meja, status")
       .eq("no_meja", data.noMeja)
@@ -53,7 +54,7 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
       throw new Response("Meja yang dipilih tidak aktif", { status: 400 });
     }
 
-    const { data: part, error: partError } = await context.supabase
+    const { data: part, error: partError } = await ctx.supabase
       .from("parts")
       .select("part_no, part_name, is_active")
       .eq("part_no", data.partNo.trim())
@@ -85,10 +86,10 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
       total_ng: ng,
       jam_mulai: data.jamMulai,
       jam_selesai: data.jamSelesai,
-      created_by: context.userId,
+      created_by: ctx.userId,
     };
 
-    const { data: report, error: reportError } = await context.supabase
+    const { data: report, error: reportError } = await ctx.supabase
       .from("inspection_reports")
       .insert(reportRow)
       .select("id")
@@ -120,7 +121,7 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
 
     detailRow.extra_defects = extra;
 
-    const { error: detailError } = await context.supabase
+    const { error: detailError } = await ctx.supabase
       .from("inspection_defect_details")
       .insert(detailRow);
 
@@ -129,7 +130,7 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
     }
 
     // Rollback the report if detail insert failed
-    const { error: rollbackError } = await context.supabase
+    const { error: rollbackError } = await ctx.supabase
       .from("inspection_reports")
       .delete()
       .eq("id", report.id);
@@ -155,7 +156,7 @@ type UpdatePayload = {
 };
 
 export const updateInspectionReport = createServerFn({ method: "POST" })
-  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .inputValidator((input: UpdatePayload) => {
     if (!input.id) throw new Response("ID laporan tidak ditemukan", { status: 400 });
     if (!input.report_date) throw new Response("Tanggal wajib diisi", { status: 400 });
@@ -169,7 +170,8 @@ export const updateInspectionReport = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ context, data }) => {
-    const { data: existing } = await context.supabase
+    const ctx = context as any;
+    const { data: existing } = await ctx.supabase
       .from("inspection_reports")
       .select("id, created_by")
       .eq("id", data.id)
@@ -181,7 +183,7 @@ export const updateInspectionReport = createServerFn({ method: "POST" })
 
     const totalOk = data.qty_check - data.total_ng;
 
-    const { error } = await context.supabase
+    const { error } = await ctx.supabase
       .from("inspection_reports")
       .update({
         report_date: data.report_date,
@@ -205,13 +207,14 @@ export const updateInspectionReport = createServerFn({ method: "POST" })
   });
 
 export const deleteInspectionReport = createServerFn({ method: "POST" })
-  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .inputValidator((input: { id: string }) => {
     if (!input.id) throw new Response("ID laporan tidak ditemukan", { status: 400 });
     return input;
   })
   .handler(async ({ context, data }) => {
-    const { error: reportError } = await context.supabase
+    const ctx = context as any;
+    const { error: reportError } = await ctx.supabase
       .from("inspection_reports")
       .delete()
       .eq("id", data.id);

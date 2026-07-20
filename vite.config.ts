@@ -4,10 +4,10 @@ import { nitro } from "nitro/vite";
 const isVercel = process.env.VERCEL === "1";
 
 export default defineConfig(
-  isVercel
+  (isVercel
     ? {
         cloudflare: false,
         plugins: [nitro()],
       }
-    : { cloudflare: true },
+    : { cloudflare: true }) as Parameters<typeof defineConfig>[0],
 );
