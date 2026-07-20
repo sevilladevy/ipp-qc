@@ -23,6 +23,7 @@ export type InspectionFormState = {
   jamMulai: string;
   jamSelesai: string;
   qtyCheck: number;
+  lotNo: string;
   defects: Record<string, number>;
 };
 
@@ -40,6 +41,7 @@ const defaultFormState: InspectionFormState = {
   jamMulai: "",
   jamSelesai: "",
   qtyCheck: 0,
+  lotNo: "",
   defects: {},
 };
 
@@ -164,6 +166,7 @@ export function useInspectionForm() {
         date: preserveContext ? prev.date : today,
         shift: preserveContext ? prev.shift : "A",
         noMeja: preserveContext ? prev.noMeja : "",
+        lotNo: preserveContext ? prev.lotNo : "",
         defects: {},
       }));
     },

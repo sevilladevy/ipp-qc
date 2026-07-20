@@ -230,6 +230,7 @@ function InputPage() {
   const mejaRef = useRef<HTMLSelectElement | null>(null);
   const partTriggerRef = useRef<HTMLButtonElement | null>(null);
   const partSearchRef = useRef<HTMLInputElement | null>(null);
+  const lotNoRef = useRef<HTMLInputElement | null>(null);
   const jamMulaiRef = useRef<HTMLInputElement | null>(null);
   const jamSelesaiRef = useRef<HTMLInputElement | null>(null);
   const qtyCheckRef = useRef<HTMLInputElement | null>(null);
@@ -249,7 +250,7 @@ function InputPage() {
   // Part selection handler
   function onChoosePart(part: (typeof activeParts)[number]) {
     choosePart(part);
-    requestAnimationFrame(() => focusElement(jamMulaiRef));
+    requestAnimationFrame(() => focusElement(lotNoRef));
   }
 
   // Focus part search on open
@@ -513,6 +514,19 @@ function InputPage() {
                   </div>
                 </div>
               )}
+
+              <Field label="Lot No.">
+                <input
+                  ref={lotNoRef}
+                  type="text"
+                  value={formState.lotNo || ""}
+                  onChange={(e) => updateField("lotNo", e.target.value)}
+                  onKeyDown={(e) => handleEnter(e, jamMulaiRef)}
+                  placeholder="Masukkan lot number..."
+                  className="input-field"
+                  maxLength={50}
+                />
+              </Field>
 
               <Field label="Jam Mulai">
                 <input
