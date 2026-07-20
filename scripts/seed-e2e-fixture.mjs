@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -43,14 +44,12 @@ const parts = [
   {
     part_no: "E2E-ALPHA",
     part_name: "E2E Fixture Alpha",
-    kategori: "E2E",
     customer: "QA",
     is_active: true,
   },
   {
     part_no: "E2E-BETA",
     part_name: "E2E Fixture Beta",
-    kategori: "E2E",
     customer: "QA",
     is_active: true,
   },
@@ -62,20 +61,22 @@ const reports = dateRows.map(({ date, index }) => {
   const ng = 12 + index * 2;
   const ok = qty_check - ng;
   return {
-    id: `e2e-fixture-${date}-${useAlpha ? "901" : "902"}`,
+    id: crypto.randomUUID(),
+    _sortKey: `${date}-${useAlpha ? "901" : "902"}`,
     report_date: date,
     shift: index % 2 === 0 ? "A" : "B",
     no_meja: useAlpha ? 1 : 2,
     part_no: useAlpha ? "E2E-ALPHA" : "E2E-BETA",
     part_name: useAlpha ? "E2E Fixture Alpha" : "E2E Fixture Beta",
     qty_check: qty_check,
-    total_ok: ok,
     total_ng: ng,
     jam_mulai: "08:00",
     jam_selesai: "16:00",
     created_by: null,
   };
 });
+
+const reportMap = new Map(reports.map((r) => [r._sortKey, r.id]));
 
 const defectDetails = reports.map((report, index) => ({
   report_id: report.id,
@@ -86,6 +87,9 @@ const defectDetails = reports.map((report, index) => ({
   bubble: 1,
   extra_defects: {},
 }));
+
+const reportIds = reports.map((row) => row.id);
+const partNos = parts.map((row) => row.part_no);
 
 const monthlyRows = reports.filter(
   (report) => report.report_date.slice(0, 7) === toIsoDate(today).slice(0, 7),
@@ -111,9 +115,6 @@ const config = {
 };
 
 const run = async () => {
-  const reportIds = reports.map((row) => row.id);
-  const partNos = parts.map((row) => row.part_no);
-
   const { error: cleanupDetailsError } = await supabase
     .from("inspection_defect_details")
     .delete()
@@ -132,7 +133,8 @@ const run = async () => {
   const { error: partsError } = await supabase.from("parts").insert(parts);
   if (partsError) throw partsError;
 
-  const { error: reportsError } = await supabase.from("inspection_reports").insert(reports);
+  const reportsToInsert = reports.map(({ _sortKey, ...rest }) => rest);
+  const { error: reportsError } = await supabase.from("inspection_reports").insert(reportsToInsert);
   if (reportsError) throw reportsError;
 
   const { error: detailsError } = await supabase

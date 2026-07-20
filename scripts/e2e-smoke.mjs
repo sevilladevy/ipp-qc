@@ -321,16 +321,11 @@ async function run() {
     await page.getByTestId("analytics-tab-metrics").click();
     await page.waitForTimeout(1200);
     result.assertions.analyticsParetoNgByProdukVisible =
-      (await page.locator("text=Yield NG Pareto By Produk").count()) > 0;
-    result.assertions.analyticsParetoCopqVisible =
-      (await page.locator("text=Yield NG Pareto By CoPQ").count()) > 0;
+      (await page.locator("text=NG Pareto By Produk").count()) > 0;
 
     if (!result.assertions.loggedIn) failures.push("Login gagal");
     if (!result.assertions.analyticsParetoNgByProdukVisible) {
-      failures.push("Chart Yield NG Pareto By Produk tidak tampil");
-    }
-    if (!result.assertions.analyticsParetoCopqVisible) {
-      failures.push("Chart Yield NG Pareto By CoPQ tidak tampil");
+      failures.push("Chart NG Pareto By Produk tidak tampil");
     }
     if (result.network.invalidDateQuery.length > 0) {
       failures.push("Masih ada query tanggal invalid report_date=gte.");

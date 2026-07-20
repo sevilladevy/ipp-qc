@@ -610,6 +610,7 @@ function Dashboard() {
                 value={fmtNum(totals.qty_check)}
                 accent="primary"
                 icon={<Package2 className="h-3.5 w-3.5" />}
+                dataTestId="dashboard-kpi-total-output"
               />,
               <KpiCard
                 key="yield"
@@ -637,6 +638,7 @@ function Dashboard() {
                 sub={`${totals.activeMachines} meja`}
                 accent="info"
                 icon={<Activity className="h-3.5 w-3.5" />}
+                dataTestId="dashboard-kpi-reports"
               />,
               <KpiCard
                 key="meja"
