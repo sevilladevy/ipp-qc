@@ -48,6 +48,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
+      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/Logo.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/Logo.png" },
       { rel: "stylesheet", href: appCss },
       {
         rel: "stylesheet",
