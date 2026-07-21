@@ -260,11 +260,7 @@ export function useInspectionForm() {
           const text = await error.text();
           toast.error(text);
         } else if (error instanceof Error) {
-          if (error.message.includes("duplicate key")) {
-            toast.error("Laporan duplikat: kombinasi tanggal+shift+meja+part sudah ada");
-          } else {
-            toast.error(error.message);
-          }
+          toast.error(error.message);
         } else {
           toast.error("Gagal menyimpan laporan");
         }
