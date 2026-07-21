@@ -2,8 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { endOfMonth, format, startOfMonth, subDays } from "date-fns";
-import { Download, Eye, FileText, Presentation, Search } from "lucide-react";
+import { Download, Eye, FileText, Presentation, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { AppLayout } from "@/components/AppLayout";
 import {
   DataTablePagination,
@@ -87,6 +90,11 @@ function LaporanPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [confirmDelete, setConfirmDelete] = useState<EnrichedReport | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const { isSupervisor } = useAuth();
+  const queryClient = useQueryClient();
 
   const [presets, setPresets] = useState<ReportPreset[]>(() => readPresets());
   const [presetName, setPresetName] = useState("");
@@ -258,6 +266,22 @@ function LaporanPage() {
       setFilters((prev) => ({ ...prev, onlyInvalid: true, minYield: 0.95 }));
     }
     setPage(1);
+  }
+
+  async function handleDelete(row: EnrichedReport) {
+    setDeletingId(row.id);
+    try {
+      const { deleteInspectionReport } = await import("@/server/reports");
+      await deleteInspectionReport({ data: { id: row.id } });
+      toast.success("Laporan berhasil dihapus");
+      setConfirmDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["report-management"] });
+    } catch (err) {
+      const msg = err instanceof Response ? await err.text() : "Gagal menghapus laporan";
+      toast.error(msg);
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   function savePreset() {
@@ -706,6 +730,7 @@ function LaporanPage() {
                     <th className="px-3 py-3 text-left">Validation</th>
                     <th className="px-3 py-3 text-left">Inspector</th>
                     <th className="px-3 py-3 text-center">Expand</th>
+                    {isSupervisor && <th className="px-3 py-3 text-center">Delete</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -764,6 +789,19 @@ function LaporanPage() {
                               <Eye className="h-3.5 w-3.5" />
                             </button>
                           </td>
+                          {isSupervisor && (
+                            <td className="px-3 py-2.5 text-center">
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDelete(row)}
+                                disabled={deletingId === row.id}
+                                className="inline-flex rounded p-1.5 text-destructive hover:bg-destructive/10 disabled:opacity-40"
+                                title="Hapus laporan"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </td>
+                          )}
                         </tr>
                         {isOpen && (
                           <tr key={`${row.id}-expanded`} className="bg-muted/30">
@@ -818,6 +856,26 @@ function LaporanPage() {
           </>
         )}
       </DataTableShell>
+
+      <ConfirmModal
+        open={confirmDelete !== null}
+        title="Hapus Laporan"
+        message={
+          confirmDelete
+            ? `Hapus laporan Meja Inspeksi ${confirmDelete.no_meja} (${confirmDelete.part_name}) pada ${fmtDate(confirmDelete.report_date)} shift ${confirmDelete.shift}?`
+            : ""
+        }
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        tone="danger"
+        loading={deletingId !== null}
+        onConfirm={() => {
+          if (confirmDelete) handleDelete(confirmDelete);
+        }}
+        onCancel={() => {
+          setConfirmDelete(null);
+        }}
+      />
     </div>
   );
 }
