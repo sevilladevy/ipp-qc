@@ -997,7 +997,7 @@ function InputPage() {
         onCancel={() => setConfirmOpen(false)}
       />
 
-      <SubmitSuccessModal open={success !== null} summary={success} onClose={() => setSuccess(null)} />
+      <SubmitSuccessModal open={success !== null} summary={success} onClose={() => { setSuccess(null); window.location.reload(); }} />
     </div>
   );
 }
