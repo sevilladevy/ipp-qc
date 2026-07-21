@@ -100,10 +100,6 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
       throw new Response(appError.message, { status: appError.status });
     }
 
-    if (ng <= 0) {
-      return { id: report.id };
-    }
-
     const detailRow: DefectInsert = { report_id: report.id, extra_defects: {} };
     const extra: Record<string, number> = {};
 
