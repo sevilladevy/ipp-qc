@@ -99,7 +99,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <div
         className={cn(
           "relative z-10 flex flex-1 flex-col transition-[padding] duration-200",
-          sidebarCollapsed ? "lg:pl-20" : "lg:pl-64",
+          sidebarCollapsed ? "lg:pl-20" : "lg:pl-40",
         )}
       >
         <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-sky-200/70 bg-white/70 px-3 backdrop-blur-lg">
@@ -187,7 +187,7 @@ function Sidebar({
     <aside
       className={cn(
         "fixed left-0 top-0 z-40 hidden h-full flex-col border-r border-sky-300/40 bg-gradient-to-b from-slate-900 via-slate-900 to-sky-950 text-slate-100 transition-[width] duration-200 lg:flex",
-        collapsed ? "w-20" : "w-64",
+        collapsed ? "w-20" : "w-40",
       )}
     >
       <div
