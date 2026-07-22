@@ -1,8 +1,9 @@
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useRouter } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/lib/auth";
 import { Card, PageHeader } from "@/components/ui-kit";
 import { Users, Cog, Package, AlertTriangle } from "lucide-react";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/master")({
   component: MasterLayout,
@@ -41,6 +42,14 @@ const MASTER_SECTIONS = [
 
 function MasterLayout() {
   const { isSupervisor, loading } = useAuth();
+  const location = useLocation();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (location.pathname === "/master" && isSupervisor) {
+      router.navigate({ to: "/master/users", replace: true });
+    }
+  }, [location.pathname, isSupervisor, router]);
 
   if (loading) return null;
 

@@ -41,3 +41,6 @@ reports/e2e-screenshots/
 # Environment variables.env
 
 .vercel
+.env.vercel
+.env.vercel.check
+vite.pid
