@@ -39,3 +39,5 @@ reports/e2e-screenshots/
 *.sw?
 
 # Environment variables.env
+
+.vercel

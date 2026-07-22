@@ -243,8 +243,8 @@ function UserManagementPage() {
               <tr>
                 <th>User</th>
                 <th>Role</th>
-                <th>Dibuat</th>
-                <th>Login Terakhir</th>
+                <th className="hidden md:table-cell">Dibuat</th>
+                <th className="hidden md:table-cell">Login Terakhir</th>
                 <th className="table-sticky-right text-right">Aksi</th>
               </tr>
             </thead>
@@ -294,8 +294,8 @@ function UserManagementPage() {
                       <td>
                         <RoleBadge role={u.role} />
                       </td>
-                      <td className="date-cell">{formatDateTime(u.created_at)}</td>
-                      <td className="date-cell">
+                      <td className="hidden date-cell md:table-cell">{formatDateTime(u.created_at)}</td>
+                      <td className="hidden date-cell md:table-cell">
                         {u.last_sign_in_at ? formatDateTime(u.last_sign_in_at) : "Belum pernah"}
                       </td>
                       <td className="table-sticky-right">

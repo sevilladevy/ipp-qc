@@ -167,10 +167,16 @@
 @layer components {
   .table-pro {
     width: 100%;
-    min-width: 720px;
+    min-width: 0;
     border-collapse: separate;
     border-spacing: 0;
     font-size: 0.875rem;
+  }
+
+  @media (min-width: 768px) {
+    .table-pro {
+      min-width: 720px;
+    }
   }
 
   .table-pro thead th {

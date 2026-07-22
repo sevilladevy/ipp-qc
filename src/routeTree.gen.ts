@@ -9,35 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as MasterRouteImport } from './routes/master'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as LaporanRouteImport } from './routes/laporan'
-import { Route as InputRouteImport } from './routes/input'
-import { Route as AnalitikRouteImport } from './routes/analitik'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as MasterUsersRouteImport } from './routes/master.users'
-import { Route as MasterPartRouteImport } from './routes/master.part'
-import { Route as MasterMejaRouteImport } from './routes/master.meja'
+import { Route as AnalitikRouteImport } from './routes/analitik'
+import { Route as InputRouteImport } from './routes/input'
+import { Route as LaporanRouteImport } from './routes/laporan'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as MasterRouteImport } from './routes/master'
 import { Route as MasterDefectTypesRouteImport } from './routes/master.defect-types'
+import { Route as MasterMejaRouteImport } from './routes/master.meja'
+import { Route as MasterPartRouteImport } from './routes/master.part'
+import { Route as MasterUsersRouteImport } from './routes/master.users'
 
-const MasterRoute = MasterRouteImport.update({
-  id: '/master',
-  path: '/master',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LaporanRoute = LaporanRouteImport.update({
-  id: '/laporan',
-  path: '/laporan',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InputRoute = InputRouteImport.update({
-  id: '/input',
-  path: '/input',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalitikRoute = AnalitikRouteImport.update({
@@ -45,19 +30,29 @@ const AnalitikRoute = AnalitikRouteImport.update({
   path: '/analitik',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const InputRoute = InputRouteImport.update({
+  id: '/input',
+  path: '/input',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MasterUsersRoute = MasterUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => MasterRoute,
+const LaporanRoute = LaporanRouteImport.update({
+  id: '/laporan',
+  path: '/laporan',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const MasterPartRoute = MasterPartRouteImport.update({
-  id: '/part',
-  path: '/part',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterRoute = MasterRouteImport.update({
+  id: '/master',
+  path: '/master',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterDefectTypesRoute = MasterDefectTypesRouteImport.update({
+  id: '/defect-types',
+  path: '/defect-types',
   getParentRoute: () => MasterRoute,
 } as any)
 const MasterMejaRoute = MasterMejaRouteImport.update({
@@ -65,9 +60,14 @@ const MasterMejaRoute = MasterMejaRouteImport.update({
   path: '/meja',
   getParentRoute: () => MasterRoute,
 } as any)
-const MasterDefectTypesRoute = MasterDefectTypesRouteImport.update({
-  id: '/defect-types',
-  path: '/defect-types',
+const MasterPartRoute = MasterPartRouteImport.update({
+  id: '/part',
+  path: '/part',
+  getParentRoute: () => MasterRoute,
+} as any)
+const MasterUsersRoute = MasterUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => MasterRoute,
 } as any)
 
@@ -158,32 +158,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/master': {
-      id: '/master'
-      path: '/master'
-      fullPath: '/master'
-      preLoaderRoute: typeof MasterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/laporan': {
-      id: '/laporan'
-      path: '/laporan'
-      fullPath: '/laporan'
-      preLoaderRoute: typeof LaporanRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/input': {
-      id: '/input'
-      path: '/input'
-      fullPath: '/input'
-      preLoaderRoute: typeof InputRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analitik': {
@@ -193,25 +172,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalitikRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/input': {
+      id: '/input'
+      path: '/input'
+      fullPath: '/input'
+      preLoaderRoute: typeof InputRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/master/users': {
-      id: '/master/users'
-      path: '/users'
-      fullPath: '/master/users'
-      preLoaderRoute: typeof MasterUsersRouteImport
-      parentRoute: typeof MasterRoute
+    '/laporan': {
+      id: '/laporan'
+      path: '/laporan'
+      fullPath: '/laporan'
+      preLoaderRoute: typeof LaporanRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/master/part': {
-      id: '/master/part'
-      path: '/part'
-      fullPath: '/master/part'
-      preLoaderRoute: typeof MasterPartRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master': {
+      id: '/master'
+      path: '/master'
+      fullPath: '/master'
+      preLoaderRoute: typeof MasterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master/defect-types': {
+      id: '/master/defect-types'
+      path: '/defect-types'
+      fullPath: '/master/defect-types'
+      preLoaderRoute: typeof MasterDefectTypesRouteImport
       parentRoute: typeof MasterRoute
     }
     '/master/meja': {
@@ -221,11 +214,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MasterMejaRouteImport
       parentRoute: typeof MasterRoute
     }
-    '/master/defect-types': {
-      id: '/master/defect-types'
-      path: '/defect-types'
-      fullPath: '/master/defect-types'
-      preLoaderRoute: typeof MasterDefectTypesRouteImport
+    '/master/part': {
+      id: '/master/part'
+      path: '/part'
+      fullPath: '/master/part'
+      preLoaderRoute: typeof MasterPartRouteImport
+      parentRoute: typeof MasterRoute
+    }
+    '/master/users': {
+      id: '/master/users'
+      path: '/users'
+      fullPath: '/master/users'
+      preLoaderRoute: typeof MasterUsersRouteImport
       parentRoute: typeof MasterRoute
     }
   }

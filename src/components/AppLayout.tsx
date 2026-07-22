@@ -104,7 +104,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       >
         <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-sky-200/70 bg-white/70 px-3 backdrop-blur-lg">
           <button
-            className="rounded-md p-1.5 text-slate-600 transition-colors hover:bg-sky-100 hover:text-sky-700 lg:hidden"
+            className="rounded-md p-1.5 text-slate-600 transition-colors hover:bg-sky-100 hover:text-sky-700 min-h-[44px] min-w-[44px] lg:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
           >
@@ -221,25 +221,34 @@ function Sidebar({
             const open = openGroups[item.to];
             return (
               <div key={item.to}>
-                <button
-                  onClick={() => setOpenGroups((prev) => ({ ...prev, [item.to]: !prev[item.to] }))}
-                  title={!showLabels ? item.label : undefined}
-                  className={cn(
-                    "flex w-full items-center rounded-md py-1.5 text-xs font-medium text-slate-200/90 transition-colors hover:bg-white/12 hover:text-cyan-100",
-                    showLabels ? "gap-2 px-2.5" : "justify-center px-2",
-                    isActive(item.to) && "bg-cyan-400/20 text-cyan-50",
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {showLabels && (
-                    <>
-                      <span className="flex-1 text-left">{item.label}</span>
-                      <ChevronDown
-                        className={cn("h-3 w-3 transition-transform", open && "rotate-180")}
-                      />
-                    </>
-                  )}
-                </button>
+                {showLabels ? (
+                  <button
+                    onClick={() => setOpenGroups((prev) => ({ ...prev, [item.to]: !prev[item.to] }))}
+                    title={item.label}
+                    className={cn(
+                      "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-200/90 transition-colors hover:bg-white/12 hover:text-cyan-100",
+                      isActive(item.to) && "bg-cyan-400/20 text-cyan-50",
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 text-left">{item.label}</span>
+                    <ChevronDown
+                      className={cn("h-3 w-3 transition-transform", open && "rotate-180")}
+                    />
+                  </button>
+                ) : (
+                  <Link
+                    to={item.to}
+                    onClick={onNavigate}
+                    title={item.label}
+                    className={cn(
+                      "flex w-full items-center justify-center rounded-md px-2 py-1.5 text-xs font-medium text-slate-200/90 transition-colors hover:bg-white/12 hover:text-cyan-100",
+                      isActive(item.to) && "bg-cyan-400/20 text-cyan-50",
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                  </Link>
+                )}
                 {open && showLabels && (
                   <div className="ml-2 mt-0.5 space-y-0.5 border-l border-cyan-400/35 pl-1.5">
                     {item.children.map((child) => {

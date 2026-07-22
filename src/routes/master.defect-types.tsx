@@ -396,10 +396,10 @@ function MasterDefect() {
                     <th className="px-3 py-3 text-left">No</th>
                     <th className="px-3 py-3 text-left">Kode</th>
                     <th className="px-3 py-3 text-left">Nama Defect</th>
-                    <th className="px-3 py-3 text-left">Kategori</th>
-                    <th className="px-3 py-3 text-left">Deskripsi</th>
-                    <th className="px-3 py-3 text-right">Urutan</th>
-                    <th className="px-3 py-3 text-center">Status</th>
+                    <th className="hidden px-3 py-3 text-left md:table-cell">Kategori</th>
+                    <th className="hidden px-3 py-3 text-left lg:table-cell">Deskripsi</th>
+                    <th className="hidden px-3 py-3 text-right md:table-cell">Urutan</th>
+                    <th className="hidden px-3 py-3 text-center md:table-cell">Status</th>
                     <th className="table-sticky-right px-3 py-3 text-center">Aksi</th>
                   </tr>
                 </thead>
@@ -414,18 +414,18 @@ function MasterDefect() {
                         </td>
                         <td className="px-3 py-2.5 font-mono text-xs">{d.kode_defect}</td>
                         <td className="px-3 py-2.5 font-medium">{d.nama_defect}</td>
-                        <td className="px-3 py-2.5">
+                        <td className="hidden px-3 py-2.5 md:table-cell">
                           <span
                             className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${kategoriDefectColor(d.kategori_defect)}`}
                           >
                             {d.kategori_defect}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 max-w-xs truncate text-xs text-muted-foreground">
+                        <td className="hidden px-3 py-2.5 max-w-xs truncate text-xs text-muted-foreground lg:table-cell">
                           {d.deskripsi || "-"}
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono">{d.urutan}</td>
-                        <td className="px-3 py-2.5 text-center">
+                        <td className="hidden px-3 py-2.5 text-right font-mono md:table-cell">{d.urutan}</td>
+                        <td className="hidden px-3 py-2.5 text-center md:table-cell">
                           <Badge variant={d.is_active ? "success" : "default"}>
                             {d.is_active ? "Aktif" : "Nonaktif"}
                           </Badge>
@@ -437,14 +437,14 @@ function MasterDefect() {
                                 setEditing(d);
                                 setOpen(true);
                               }}
-                              className="rounded p-1.5 text-info hover:bg-info/10"
+                              className="rounded p-1.5 text-info hover:bg-info/10 min-h-[44px] min-w-[44px]"
                               title="Edit"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
                               onClick={() => toggleActive(d)}
-                              className="rounded p-1.5 text-warning-foreground hover:bg-warning/15"
+                              className="rounded p-1.5 text-warning-foreground hover:bg-warning/15 min-h-[44px] min-w-[44px]"
                               title={d.is_active ? "Nonaktifkan" : "Aktifkan"}
                             >
                               {d.is_active ? (
@@ -456,7 +456,7 @@ function MasterDefect() {
                             {!used && (
                               <button
                                 onClick={() => setConfirmDelete(d)}
-                                className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                                className="rounded p-1.5 text-destructive hover:bg-destructive/10 min-h-[44px] min-w-[44px]"
                                 title="Hapus"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />

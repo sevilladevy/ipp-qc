@@ -879,7 +879,7 @@ function InputPage() {
                             <button
                               type="button"
                               onClick={() => openEditLog(row)}
-                              className="inline-flex rounded p-1.5 text-info hover:bg-info/10"
+                              className="inline-flex rounded p-1.5 text-info hover:bg-info/10 min-h-[44px] min-w-[44px]"
                               title="Edit log"
                               aria-label="Edit log"
                             >
@@ -891,7 +891,7 @@ function InputPage() {
                           <button
                             type="button"
                             onClick={() => setViewingLog(row)}
-                            className="inline-flex rounded p-1.5 text-primary hover:bg-primary/10"
+                            className="inline-flex rounded p-1.5 text-primary hover:bg-primary/10 min-h-[44px] min-w-[44px]"
                             title="View log"
                             aria-label="View log"
                           >
@@ -904,7 +904,7 @@ function InputPage() {
                               type="button"
                               onClick={() => setConfirmDelete(row)}
                               disabled={deletingLogId === row.id}
-                              className="inline-flex rounded p-1.5 text-destructive hover:bg-destructive/10 disabled:opacity-40"
+                              className="inline-flex rounded p-1.5 text-destructive hover:bg-destructive/10 disabled:opacity-40 min-h-[44px] min-w-[44px]"
                               title="Delete log"
                               aria-label="Delete log"
                             >

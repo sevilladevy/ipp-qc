@@ -190,8 +190,8 @@ function MasterMeja() {
                     <tr>
                       <th className="px-4 py-3 text-left">No Meja</th>
                       <th className="px-4 py-3 text-left">Nama</th>
-                      <th className="px-4 py-3 text-center">Status</th>
-                      <th className="px-4 py-3 text-center">Default Part</th>
+                      <th className="hidden px-4 py-3 text-center md:table-cell">Status</th>
+                      <th className="hidden px-4 py-3 text-center md:table-cell">Default Part</th>
                       <th className="table-sticky-right px-4 py-3 text-center">Aksi</th>
                     </tr>
                   </thead>
@@ -200,7 +200,7 @@ function MasterMeja() {
                       <tr key={m.id} className="border-t border-border hover:bg-muted/30">
                         <td className="px-4 py-2.5 font-semibold">Meja Inspeksi {m.no_meja}</td>
                         <td className="px-4 py-2.5">{m.nama_meja || "-"}</td>
-                        <td className="px-4 py-2.5 text-center">
+                        <td className="hidden px-4 py-2.5 text-center md:table-cell">
                           <Badge
                             variant={
                               m.status === "Aktif"
@@ -213,7 +213,7 @@ function MasterMeja() {
                             {m.status}
                           </Badge>
                         </td>
-                        <td className="px-4 py-2.5 text-center">
+                        <td className="hidden px-4 py-2.5 text-center md:table-cell">
                           <span className="text-xs text-muted-foreground">
                             {defaultPartsMap ? (defaultPartsMap.get(m.no_meja)?.length ?? 0) : "-"}
                           </span>
@@ -222,7 +222,7 @@ function MasterMeja() {
                           <div className="inline-flex gap-1">
                             <button
                               onClick={() => setPartsModal(m)}
-                              className="rounded p-1.5 text-info/70 hover:bg-info/10"
+                              className="rounded p-1.5 text-info/70 hover:bg-info/10 min-h-[44px] min-w-[44px]"
                               title="Atur default part"
                             >
                               <Package className="h-3.5 w-3.5" />
@@ -232,13 +232,13 @@ function MasterMeja() {
                                 setEditing(m);
                                 setOpen(true);
                               }}
-                              className="rounded p-1.5 text-info hover:bg-info/10"
+                              className="rounded p-1.5 text-info hover:bg-info/10 min-h-[44px] min-w-[44px]"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
                               onClick={() => setConfirmDelete(m.id)}
-                              className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                              className="rounded p-1.5 text-destructive hover:bg-destructive/10 min-h-[44px] min-w-[44px]"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>

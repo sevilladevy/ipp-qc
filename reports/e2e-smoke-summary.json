@@ -2,77 +2,98 @@
   "baseUrl": "http://127.0.0.1:5173",
   "credentialsEmail": "admin@ipp.com",
   "dateRange": {
-    "from": "2000-01-01",
-    "to": "2026-04-26"
+    "from": "2026-07-14",
+    "to": "2026-07-20"
   },
-  "fixture": null,
-  "startedAt": "2026-04-26T06:47:38.391Z",
+  "fixture": {
+    "path": "E:\\ipp-quality\\scripts\\e2e-fixture-config.json",
+    "partFilter": "E2E Fixture",
+    "expectedByMode": {
+      "daily": {
+        "reports": 1,
+        "output": 1380
+      },
+      "weekly": {
+        "reports": 7,
+        "output": 7980
+      },
+      "monthly": {
+        "reports": 7,
+        "output": 7980
+      },
+      "range": {
+        "reports": 7,
+        "output": 7980
+      }
+    }
+  },
+  "startedAt": "2026-07-20T16:39:52.876Z",
   "steps": [
     {
       "step": "Open login page",
       "status": "running",
       "detail": "",
-      "at": "2026-04-26T06:47:40.109Z"
+      "at": "2026-07-20T16:39:53.232Z"
     },
     {
       "step": "Open login page",
       "status": "passed",
       "detail": "",
-      "at": "2026-04-26T06:47:47.936Z"
+      "at": "2026-07-20T16:40:01.619Z"
     },
     {
       "step": "Login",
       "status": "running",
       "detail": "",
-      "at": "2026-04-26T06:47:47.936Z"
+      "at": "2026-07-20T16:40:01.619Z"
     },
     {
       "step": "Login",
       "status": "passed",
       "detail": "",
-      "at": "2026-04-26T06:47:50.134Z"
+      "at": "2026-07-20T16:40:03.854Z"
     },
     {
       "step": "Dashboard period checks",
       "status": "running",
       "detail": "",
-      "at": "2026-04-26T06:47:50.134Z"
+      "at": "2026-07-20T16:40:03.854Z"
     },
     {
       "step": "Dashboard period checks",
       "status": "passed",
       "detail": "",
-      "at": "2026-04-26T06:48:26.826Z"
+      "at": "2026-07-20T16:41:11.552Z"
     },
     {
       "step": "Open analytics page",
       "status": "running",
       "detail": "",
-      "at": "2026-04-26T06:48:26.826Z"
+      "at": "2026-07-20T16:41:11.552Z"
     },
     {
       "step": "Open analytics page",
       "status": "passed",
       "detail": "",
-      "at": "2026-04-26T06:48:35.089Z"
+      "at": "2026-07-20T16:41:13.210Z"
     },
     {
       "step": "Analytics period checks",
       "status": "running",
       "detail": "",
-      "at": "2026-04-26T06:48:35.090Z"
+      "at": "2026-07-20T16:41:13.210Z"
     },
     {
       "step": "Analytics period checks",
       "status": "passed",
       "detail": "",
-      "at": "2026-04-26T06:49:09.834Z"
+      "at": "2026-07-20T16:42:21.078Z"
     },
     {
       "step": "Assertions",
       "status": "passed",
       "detail": "",
-      "at": "2026-04-26T06:49:14.971Z"
+      "at": "2026-07-20T16:42:22.601Z"
     }
   ],
   "console": {
@@ -90,39 +111,39 @@
     "loggedIn": true,
     "dashboardHasData": true,
     "analyticsParetoNgByProdukVisible": true,
-    "analyticsParetoCopqVisible": true
+    "analyticsParetoCopqVisible": false
   },
   "periodChecks": {
     "dashboard": {
       "daily": {
-        "output": 0,
-        "reports": 0
+        "output": 1380,
+        "reports": 1
       },
       "weekly": {
-        "output": 0,
-        "reports": 0
+        "output": 7980,
+        "reports": 7
       },
       "monthly": {
-        "output": 0,
-        "reports": 0
+        "output": 7980,
+        "reports": 7
       },
       "range": {
-        "output": 3864221,
-        "reports": 1000
+        "output": 7980,
+        "reports": 7
       }
     },
     "analytics": {
       "daily": {
-        "output": 0
+        "output": 1380
       },
       "weekly": {
-        "output": 0
+        "output": 7980
       },
       "monthly": {
-        "output": 0
+        "output": 7980
       },
       "range": {
-        "output": 3864221
+        "output": 7980
       }
     }
   },
@@ -130,5 +151,5 @@
     "screenshots": []
   },
   "passed": true,
-  "finishedAt": "2026-04-26T06:49:14.971Z"
+  "finishedAt": "2026-07-20T16:42:22.601Z"
 }

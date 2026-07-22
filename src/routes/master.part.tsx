@@ -244,9 +244,9 @@ function MasterPart() {
                   <tr>
                     <th className="px-4 py-3 text-left">Part No</th>
                     <th className="px-4 py-3 text-left">Nama Part</th>
-                    <th className="px-4 py-3 text-left">Kategori</th>
-                    <th className="px-4 py-3 text-right">Cycle Time (dtk)</th>
-                    <th className="px-4 py-3 text-center">Status</th>
+                    <th className="hidden px-4 py-3 text-left md:table-cell">Kategori</th>
+                    <th className="hidden px-4 py-3 text-right md:table-cell">Cycle Time (dtk)</th>
+                    <th className="hidden px-4 py-3 text-center md:table-cell">Status</th>
                     <th className="table-sticky-right px-4 py-3 text-center">Aksi</th>
                   </tr>
                 </thead>
@@ -255,13 +255,13 @@ function MasterPart() {
                     <tr key={p.id} className="border-t border-border hover:bg-muted/30">
                       <td className="px-4 py-2.5 font-mono text-xs">{p.part_no}</td>
                       <td className="px-4 py-2.5 font-medium">{p.part_name}</td>
-                      <td className="px-4 py-2.5">
+                      <td className="hidden px-4 py-2.5 md:table-cell">
                         <Badge variant="outline">{p.kategori || "-"}</Badge>
                       </td>
-                      <td className="px-4 py-2.5 text-right font-mono text-xs">
+                      <td className="hidden px-4 py-2.5 text-right font-mono text-xs md:table-cell">
                         {p.standard_cycle_time != null ? `${p.standard_cycle_time}s` : "-"}
                       </td>
-                      <td className="px-4 py-2.5 text-center">
+                      <td className="hidden px-4 py-2.5 text-center md:table-cell">
                         <Badge variant={p.is_active ? "success" : "default"}>
                           {p.is_active ? "Aktif" : "Nonaktif"}
                         </Badge>
@@ -273,13 +273,13 @@ function MasterPart() {
                               setEditing(p);
                               setOpen(true);
                             }}
-                            className="rounded p-1.5 text-info hover:bg-info/10"
+                            className="rounded p-1.5 text-info hover:bg-info/10 min-h-[44px] min-w-[44px]"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => setConfirmDelete(p.id)}
-                            className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                            className="rounded p-1.5 text-destructive hover:bg-destructive/10 min-h-[44px] min-w-[44px]"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>

@@ -781,7 +781,7 @@ function LaporanPage() {
                           <td className="px-3 py-2.5 text-xs">{row.inspector_name}</td>
                           <td className="px-3 py-2.5 text-center">
                             <button
-                              className="inline-flex rounded p-1.5 text-info hover:bg-info/10"
+                              className="inline-flex rounded p-1.5 text-info hover:bg-info/10 min-h-[44px] min-w-[44px]"
                               onClick={() =>
                                 setExpanded((prev) => ({ ...prev, [row.id]: !prev[row.id] }))
                               }
@@ -796,7 +796,7 @@ function LaporanPage() {
                                 type="button"
                                 onClick={() => setConfirmDelete(row)}
                                 disabled={deletingId === row.id}
-                                className="inline-flex rounded p-1.5 text-destructive hover:bg-destructive/10 disabled:opacity-40"
+                                className="inline-flex rounded p-1.5 text-destructive hover:bg-destructive/10 disabled:opacity-40 min-h-[44px] min-w-[44px]"
                                 title="Hapus laporan"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
