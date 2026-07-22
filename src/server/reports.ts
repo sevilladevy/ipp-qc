@@ -35,42 +35,43 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
   })
   .handler(async ({ context, data }) => {
     const ctx = context as any;
-    const { data: meja, error: mejaError } = await ctx.supabase
-      .from("inspection_tables")
-      .select("no_meja, status")
-      .eq("no_meja", data.noMeja)
-      .maybeSingle();
 
+    // Run meja + part validation in PARALLEL
+    const [mejaResult, partResult] = await Promise.all([
+      ctx.supabase
+        .from("inspection_tables")
+        .select("no_meja, status")
+        .eq("no_meja", data.noMeja)
+        .maybeSingle(),
+      ctx.supabase
+        .from("parts")
+        .select("part_no, part_name, is_active")
+        .eq("part_no", data.partNo.trim())
+        .maybeSingle(),
+    ]);
+
+    const { data: meja, error: mejaError } = mejaResult;
     if (mejaError) {
       const appError = toAppError(mejaError);
       throw new Response(appError.message, { status: appError.status });
     }
-
     if (!meja) {
       throw new Response("Meja inspeksi tidak ditemukan di master", { status: 400 });
     }
-
     if (meja.status !== "Aktif") {
       throw new Response("Meja yang dipilih tidak aktif", { status: 400 });
     }
 
-    const { data: part, error: partError } = await ctx.supabase
-      .from("parts")
-      .select("part_no, part_name, is_active")
-      .eq("part_no", data.partNo.trim())
-      .maybeSingle();
-
+    const { data: part, error: partError } = partResult;
     if (partError) {
       const appError = toAppError(partError);
       throw new Response(appError.message, { status: appError.status });
     }
-
     if (!part || !part.is_active) {
       throw new Response("Part tidak ditemukan di master atau tidak aktif", { status: 400 });
     }
 
     const ng = Object.values(data.defects).reduce((sum, v) => sum + Math.max(0, v || 0), 0);
-
     if (ng > data.qtyCheck) {
       throw new Response("Total defect tidak boleh melebihi qty check", { status: 400 });
     }
@@ -89,12 +90,12 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
       created_by: ctx.userId,
     };
 
+    // Insert report, then detail (detail depends on report.id)
     const { data: report, error: reportError } = await ctx.supabase
       .from("inspection_reports")
       .insert(reportRow)
       .select("id")
       .single();
-
     if (reportError) {
       const appError = toAppError(reportError);
       throw new Response(appError.message, { status: appError.status });
@@ -106,7 +107,6 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
     for (const [kodeDefect, rawValue] of Object.entries(data.defects)) {
       const value = Math.max(0, rawValue || 0);
       if (value <= 0) continue;
-
       const column = KODE_TO_COLUMN[kodeDefect];
       if (column) {
         detailRow[column] = value;
@@ -114,7 +114,6 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
         extra[kodeDefect] = value;
       }
     }
-
     detailRow.extra_defects = extra;
 
     const { error: detailError } = await ctx.supabase
