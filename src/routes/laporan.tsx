@@ -5,7 +5,7 @@ import { endOfMonth, format, startOfMonth, subDays } from "date-fns";
 import { Download, Eye, FileText, Presentation, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/lib/auth";
+import { isPrivilegedUser, useAuth } from "@/lib/auth";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { AppLayout } from "@/components/AppLayout";
 import {
@@ -93,7 +93,8 @@ function LaporanPage() {
   const [confirmDelete, setConfirmDelete] = useState<EnrichedReport | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const { isSupervisor } = useAuth();
+  const { role, user } = useAuth();
+  const canDelete = isPrivilegedUser(role, user?.email);
   const queryClient = useQueryClient();
 
   const [presets, setPresets] = useState<ReportPreset[]>(() => readPresets());
@@ -730,7 +731,7 @@ function LaporanPage() {
                     <th className="px-3 py-3 text-left">Validation</th>
                     <th className="px-3 py-3 text-left">Inspector</th>
                     <th className="px-3 py-3 text-center">Expand</th>
-                    {isSupervisor && <th className="px-3 py-3 text-center">Delete</th>}
+                    {canDelete && <th className="px-3 py-3 text-center">Delete</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -789,7 +790,7 @@ function LaporanPage() {
                               <Eye className="h-3.5 w-3.5" />
                             </button>
                           </td>
-                          {isSupervisor && (
+                          {canDelete && (
                             <td className="px-3 py-2.5 text-center">
                               <button
                                 type="button"
