@@ -47,18 +47,37 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     }
 
     const token = authHeader.replace("Bearer ", "");
+
+    // Create client with proper session to ensure RLS context is set
     const supabase = createClient<Database>(SUPABASE_URL!, SUPABASE_PUBLISHABLE_KEY!, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
     });
 
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data?.user) {
-      console.error("[AUTH] getUser failed:", error?.message ?? "No user data");
+    // Set the session with the user's token to properly propagate auth context to RLS
+    const { data, error: sessionError } = await supabase.auth.setSession({
+      access_token: token,
+      refresh_token: "", // Refresh token not needed for server functions
+    });
+
+    if (sessionError) {
+      console.error("[AUTH] setSession failed:", sessionError.message);
       throw new Response("Unauthorized: Invalid token", { status: 401 });
     }
 
-    console.log("[AUTH] Auth success, userId:", data.user.id);
-    return next({ context: { supabase, userId: data.user.id, demoMode: false } as never });
+    // Verify the user exists
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) {
+      console.error("[AUTH] getUser failed:", userError?.message ?? "No user data");
+      throw new Response("Unauthorized: Invalid token", { status: 401 });
+    }
+
+    console.log("[AUTH] Auth success, userId:", userData.user.id);
+    return next({
+      context: { supabase, userId: userData.user.id, demoMode: false } as never,
+    });
   },
 );
