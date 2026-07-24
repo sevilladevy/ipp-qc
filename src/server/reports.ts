@@ -31,10 +31,14 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
     if (!input.jamMulai?.trim()) throw new Response("Jam mulai wajib diisi", { status: 400 });
     if (!input.jamSelesai?.trim()) throw new Response("Jam selesai wajib diisi", { status: 400 });
     if (input.qtyCheck <= 0) throw new Response("Qty check harus > 0", { status: 400 });
+    console.log("[saveInspectionReport] Input validated:", JSON.stringify({ date: input.date, noMeja: input.noMeja, partNo: input.partNo }));
     return input;
   })
   .handler(async ({ context, data }) => {
     const ctx = context as any;
+    console.log("[saveInspectionReport] Handler started. Context keys:", Object.keys(ctx));
+    console.log("[saveInspectionReport] User ID:", ctx.userId);
+    console.log("[saveInspectionReport] Demo mode:", ctx.demoMode);
 
     // Run meja + part validation in PARALLEL
     const [mejaResult, partResult] = await Promise.all([
@@ -51,7 +55,9 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
     ]);
 
     const { data: meja, error: mejaError } = mejaResult;
+    console.log("[saveInspectionReport] Meja query result:", { meja, mejaError });
     if (mejaError) {
+      console.error("[saveInspectionReport] Meja error:", mejaError);
       const appError = toAppError(mejaError);
       throw new Response(appError.message, { status: appError.status });
     }
@@ -59,10 +65,12 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
       throw new Response("Meja inspeksi tidak ditemukan di master", { status: 400 });
     }
     if (meja.status !== "Aktif") {
+      console.warn("[saveInspectionReport] Meja not active:", meja.status);
       throw new Response("Meja yang dipilih tidak aktif", { status: 400 });
     }
 
     const { data: part, error: partError } = partResult;
+    console.log("[saveInspectionReport] Part query result:", { part, partError });
     if (partError) {
       const appError = toAppError(partError);
       throw new Response(appError.message, { status: appError.status });
@@ -91,12 +99,15 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
     };
 
     // Insert report, then detail (detail depends on report.id)
+    console.log("[saveInspectionReport] Inserting report:", JSON.stringify(reportRow));
     const { data: report, error: reportError } = await ctx.supabase
       .from("inspection_reports")
       .insert(reportRow)
       .select("id")
       .single();
+    console.log("[saveInspectionReport] Report insert result:", { report, reportError });
     if (reportError) {
+      console.error("[saveInspectionReport] Report insert error:", reportError);
       const appError = toAppError(reportError);
       throw new Response(appError.message, { status: appError.status });
     }
@@ -120,16 +131,21 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
       .from("inspection_defect_details")
       .insert(detailRow);
 
+    console.log("[saveInspectionReport] Detail insert result:", { detailError, detailRow });
+
     if (!detailError) {
+      console.log("[saveInspectionReport] SUCCESS - Report saved with ID:", report.id);
       return { id: report.id };
     }
 
     // Rollback the report if detail insert failed
+    console.warn("[saveInspectionReport] Detail insert failed, rolling back report:", report.id);
     const { error: rollbackError } = await ctx.supabase
       .from("inspection_reports")
       .delete()
       .eq("id", report.id);
 
+    console.error("[saveInspectionReport] Rollback result:", { rollbackError });
     let message = `Penyimpanan dibatalkan karena detail defect gagal: ${detailError.message}.`;
     if (rollbackError) {
       const rollbackAppError = toAppError(rollbackError);
