@@ -2,6 +2,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -26,9 +27,9 @@ export function SubmitSuccessModal({
         </div>
         <DialogHeader>
           <DialogTitle>Laporan Berhasil Disimpan</DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <DialogDescription>
             Data inspeksi telah tersimpan di database.
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         {summary && (

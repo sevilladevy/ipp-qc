@@ -1,6 +1,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -59,9 +60,9 @@ export function SubmitConfirmModal({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Konfirmasi Submit Laporan</DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <DialogDescription>
             Periksa kembali data sebelum disimpan ke database.
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 text-sm">
