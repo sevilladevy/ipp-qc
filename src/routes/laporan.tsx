@@ -641,7 +641,7 @@ function LaporanPage() {
         ) : isGrouped ? (
           <>
             <div className="overflow-x-auto">
-              <table className="table-pro w-full text-sm">
+              <table className="table-pro cardify w-full text-sm">
                 <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2 text-left">Group</th>
@@ -655,12 +655,24 @@ function LaporanPage() {
                 <tbody>
                   {pageGroupedRows.map((row) => (
                     <tr key={row.key}>
-                      <td className="px-3 py-2 font-medium">{row.key}</td>
-                      <td className="px-3 py-2 text-right">{fmtNum(row.reports)}</td>
-                      <td className="px-3 py-2 text-right">{fmtNum(row.qty_check)}</td>
-                      <td className="px-3 py-2 text-right text-success">{fmtNum(row.ok)}</td>
-                      <td className="px-3 py-2 text-right text-destructive">{fmtNum(row.ng)}</td>
-                      <td className="px-3 py-2 text-right">{fmtPct(row.passRate)}</td>
+                      <td data-label="Group" className="px-3 py-2 font-medium">
+                        {row.key}
+                      </td>
+                      <td data-label="Reports" className="px-3 py-2 text-right">
+                        {fmtNum(row.reports)}
+                      </td>
+                      <td data-label="Qty Check" className="px-3 py-2 text-right">
+                        {fmtNum(row.qty_check)}
+                      </td>
+                      <td data-label="OK" className="px-3 py-2 text-right text-success">
+                        {fmtNum(row.ok)}
+                      </td>
+                      <td data-label="NG" className="px-3 py-2 text-right text-destructive">
+                        {fmtNum(row.ng)}
+                      </td>
+                      <td data-label="Pass Rate" className="px-3 py-2 text-right">
+                        {fmtPct(row.passRate)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -681,7 +693,7 @@ function LaporanPage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="table-pro w-full text-sm">
+              <table className="table-pro cardify w-full text-sm">
                 <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="px-3 py-3 text-left">No</th>
@@ -747,25 +759,31 @@ function LaporanPage() {
                     return (
                       <Fragment key={row.id}>
                         <tr key={row.id} className={rowTone}>
-                          <td className="px-3 py-2.5 text-muted-foreground">
+                          <td data-label="No" className="px-3 py-2.5 text-muted-foreground">
                             {(page - 1) * pageSize + index + 1}
                           </td>
-                          <td className="px-3 py-2.5">{fmtDate(row.report_date)}</td>
-                          <td className="px-3 py-2.5">
+                          <td data-label="Tanggal" className="px-3 py-2.5">
+                            {fmtDate(row.report_date)}
+                          </td>
+                          <td data-label="Shift" className="px-3 py-2.5">
                             <Badge variant="info">{row.shift}</Badge>
                           </td>
-                          <td className="px-3 py-2.5 font-medium">Meja Inspeksi {row.no_meja}</td>
-                          <td className="px-3 py-2.5">
+                          <td data-label="Meja" className="px-3 py-2.5 font-medium">
+                            Meja Inspeksi {row.no_meja}
+                          </td>
+                          <td data-label="Part" className="px-3 py-2.5">
                             <span className="font-medium">{row.part_name}</span>
                           </td>
-                          <td className="px-3 py-2.5 text-right">{fmtNum(row.qty_check)}</td>
-                          <td className="px-3 py-2.5 text-right text-success">
+                          <td data-label="Qty Check" className="px-3 py-2.5 text-right">
+                            {fmtNum(row.qty_check)}
+                          </td>
+                          <td data-label="OK" className="px-3 py-2.5 text-right text-success">
                             {fmtNum(row.total_ok)}
                           </td>
-                          <td className="px-3 py-2.5 text-right text-destructive">
+                          <td data-label="NG" className="px-3 py-2.5 text-right text-destructive">
                             {fmtNum(row.total_ng)}
                           </td>
-                          <td className="px-3 py-2.5">
+                          <td data-label="Validasi" className="px-3 py-2.5">
                             <Badge
                               variant={
                                 row.validation.status === "good"
@@ -778,8 +796,10 @@ function LaporanPage() {
                               {row.validation.score}
                             </Badge>
                           </td>
-                          <td className="px-3 py-2.5 text-xs">{row.inspector_name}</td>
-                          <td className="px-3 py-2.5 text-center">
+                          <td data-label="Inspector" className="px-3 py-2.5 text-xs">
+                            {row.inspector_name}
+                          </td>
+                          <td data-label="Detail" className="px-3 py-2.5 text-center">
                             <button
                               className="inline-flex rounded p-1.5 text-info hover:bg-info/10 min-h-[44px] min-w-[44px]"
                               onClick={() =>
@@ -791,7 +811,7 @@ function LaporanPage() {
                             </button>
                           </td>
                           {canDelete && (
-                            <td className="px-3 py-2.5 text-center">
+                            <td data-label="Hapus" className="px-3 py-2.5 text-center">
                               <button
                                 type="button"
                                 onClick={() => setConfirmDelete(row)}
@@ -805,8 +825,12 @@ function LaporanPage() {
                           )}
                         </tr>
                         {isOpen && (
-                          <tr key={`${row.id}-expanded`} className="bg-muted/30">
-                            <td colSpan={20} className="px-4 py-3 text-xs">
+                          <tr key={`${row.id}-expanded`} className="card-expand bg-muted/30">
+                            <td
+                              data-label="Detail"
+                              colSpan={20}
+                              className="card-full px-4 py-3 text-xs"
+                            >
                               <p className="font-semibold">Validation details</p>
                               {row.validation.issues.length === 0 ? (
                                 <p className="text-success">Data valid - tidak ada issue.</p>

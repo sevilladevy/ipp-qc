@@ -239,7 +239,7 @@ function MasterPart() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="table-pro w-full text-sm">
+              <table className="table-pro cardify w-full text-sm">
                 <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 text-left">Part No</th>
@@ -253,20 +253,30 @@ function MasterPart() {
                 <tbody>
                   {pageRows.map((p) => (
                     <tr key={p.id} className="border-t border-border hover:bg-muted/30">
-                      <td className="px-4 py-2.5 font-mono text-xs">{p.part_no}</td>
-                      <td className="px-4 py-2.5 font-medium">{p.part_name}</td>
-                      <td className="hidden px-4 py-2.5 md:table-cell">
+                      <td data-label="Part No" className="px-4 py-2.5 font-mono text-xs">
+                        {p.part_no}
+                      </td>
+                      <td data-label="Nama Part" className="px-4 py-2.5 font-medium">
+                        {p.part_name}
+                      </td>
+                      <td data-label="Kategori" className="hidden px-4 py-2.5 md:table-cell">
                         <Badge variant="outline">{p.kategori || "-"}</Badge>
                       </td>
-                      <td className="hidden px-4 py-2.5 text-right font-mono text-xs md:table-cell">
+                      <td
+                        data-label="Cycle Time"
+                        className="hidden px-4 py-2.5 text-right font-mono text-xs md:table-cell"
+                      >
                         {p.standard_cycle_time != null ? `${p.standard_cycle_time}s` : "-"}
                       </td>
-                      <td className="hidden px-4 py-2.5 text-center md:table-cell">
+                      <td
+                        data-label="Status"
+                        className="hidden px-4 py-2.5 text-center md:table-cell"
+                      >
                         <Badge variant={p.is_active ? "success" : "default"}>
                           {p.is_active ? "Aktif" : "Nonaktif"}
                         </Badge>
                       </td>
-                      <td className="table-sticky-right px-4 py-2.5 text-center">
+                      <td data-action className="table-sticky-right px-4 py-2.5 text-center">
                         <div className="inline-flex gap-1">
                           <button
                             onClick={() => {

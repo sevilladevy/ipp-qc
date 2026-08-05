@@ -972,7 +972,7 @@ function InputPage() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="table-pro w-full text-sm">
+                <table className="table-pro cardify w-full text-sm">
                   <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
                     <tr>
                       <th className="px-3 py-3 text-left">Timestamp</th>
@@ -993,28 +993,38 @@ function InputPage() {
                   <tbody>
                     {pageLogRows.map((row) => (
                       <tr key={row.id} className="border-t border-border hover:bg-muted/30">
-                        <td className="px-3 py-2.5 whitespace-nowrap">
+                        <td data-label="Waktu" className="px-3 py-2.5 whitespace-nowrap">
                           {formatTimestamp(row.created_at)}
                         </td>
-                        <td className="px-3 py-2.5 font-medium">Meja Inspeksi {row.no_meja}</td>
-                        <td className="px-3 py-2.5">Shift {row.shift}</td>
-                        <td className="px-3 py-2.5">{row.inspectorName}</td>
-                        <td className="px-3 py-2.5">
+                        <td data-label="Meja" className="px-3 py-2.5 font-medium">
+                          Meja Inspeksi {row.no_meja}
+                        </td>
+                        <td data-label="Shift" className="px-3 py-2.5">
+                          Shift {row.shift}
+                        </td>
+                        <td data-label="Inspector" className="px-3 py-2.5">
+                          {row.inspectorName}
+                        </td>
+                        <td data-label="Part" className="px-3 py-2.5">
                           {row.part_no} - {row.part_name}
                         </td>
-                        <td className="px-3 py-2.5 font-mono text-xs">{row.lot_no || "-"}</td>
-                        <td className="px-3 py-2.5 text-right">{fmtNum(row.qty_check)}</td>
-                        <td className="px-3 py-2.5 text-right text-success">
+                        <td data-label="Lot No." className="px-3 py-2.5 font-mono text-xs">
+                          {row.lot_no || "-"}
+                        </td>
+                        <td data-label="Qty Check" className="px-3 py-2.5 text-right">
+                          {fmtNum(row.qty_check)}
+                        </td>
+                        <td data-label="OK" className="px-3 py-2.5 text-right text-success">
                           {fmtNum(row.total_ok ?? 0)}
                         </td>
-                        <td className="px-3 py-2.5 text-right text-destructive">
+                        <td data-label="NG" className="px-3 py-2.5 text-right text-destructive">
                           {fmtNum(row.total_ng)}
                         </td>
-                        <td className="px-3 py-2.5 text-right">
+                        <td data-label="NG Rate" className="px-3 py-2.5 text-right">
                           {(getNgRate(row) * 100).toFixed(2)}%
                         </td>
                         {canManageInputLog && (
-                          <td className="px-3 py-2.5 text-center">
+                          <td data-label="Ubah" className="px-3 py-2.5 text-center">
                             <button
                               type="button"
                               onClick={() => openEditLog(row)}
@@ -1026,7 +1036,7 @@ function InputPage() {
                             </button>
                           </td>
                         )}
-                        <td className="px-3 py-2.5 text-center">
+                        <td data-label="Lihat" className="px-3 py-2.5 text-center">
                           <button
                             type="button"
                             onClick={() => setViewingLog(row)}
@@ -1038,7 +1048,7 @@ function InputPage() {
                           </button>
                         </td>
                         {canManageInputLog && (
-                          <td className="px-3 py-2.5 text-center">
+                          <td data-label="Hapus" className="px-3 py-2.5 text-center">
                             <button
                               type="button"
                               onClick={() => setConfirmDelete(row)}

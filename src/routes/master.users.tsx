@@ -239,7 +239,7 @@ function UserManagementPage() {
           </button>
         </div>
         <div className="table-wrap">
-          <table className="users-table">
+          <table className="users-table cardify">
             <thead>
               <tr>
                 <th>User</th>
@@ -278,7 +278,7 @@ function UserManagementPage() {
 
                   return (
                     <tr key={u.id}>
-                      <td>
+                      <td data-label="User">
                         <div className="user-cell">
                           <div className={cn("avatar", isSup && "supervisor")}>
                             {getInitials(u.full_name || u.email)}
@@ -292,16 +292,16 @@ function UserManagementPage() {
                           </div>
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Role">
                         <RoleBadge role={u.role} />
                       </td>
-                      <td className="hidden date-cell md:table-cell">
+                      <td data-label="Dibuat" className="hidden date-cell md:table-cell">
                         {formatDateTime(u.created_at)}
                       </td>
-                      <td className="hidden date-cell md:table-cell">
+                      <td data-label="Login Terakhir" className="hidden date-cell md:table-cell">
                         {u.last_sign_in_at ? formatDateTime(u.last_sign_in_at) : "Belum pernah"}
                       </td>
-                      <td className="table-sticky-right">
+                      <td data-action className="table-sticky-right">
                         <div className="row-actions">
                           {!isSup && (
                             <button

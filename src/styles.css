@@ -215,6 +215,108 @@
     background: color-mix(in oklab, var(--color-card) 82%, var(--color-background));
   }
 
+  /* ============================
+   * Mobile: convert .cardify data tables into labelled cards
+   * Reuses .card-compact tokens (--color-card / --color-border / radius 8px)
+   * and existing component helpers inside each cell (Badge / fmt* / icon buttons).
+   * Sticky headers, column sizing & horizontal scroll only apply >= md.
+   * ============================ */
+  @media (max-width: 640px) {
+    .table-pro.cardify,
+    .users-table.cardify {
+      min-width: 0;
+    }
+
+    .cardify thead {
+      display: none;
+    }
+
+    .cardify,
+    .cardify tbody,
+    .cardify tr,
+    .cardify td {
+      display: block;
+      width: 100%;
+    }
+
+    .cardify tbody tr {
+      margin-bottom: 0.625rem;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      background: var(--color-card);
+    }
+
+    .cardify tbody tr:last-child {
+      margin-bottom: 0;
+    }
+
+    .cardify tbody td {
+      display: flex !important;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.5rem 0.75rem;
+      padding: 0.45rem 0.75rem !important;
+      border-bottom: 1px dashed color-mix(in oklab, var(--color-border) 78%, transparent);
+      text-align: right !important;
+      overflow-wrap: anywhere;
+    }
+
+    .cardify tbody td:last-child {
+      border-bottom: 0;
+    }
+
+    .cardify tbody td::before {
+      content: attr(data-label);
+      flex-shrink: 0;
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      line-height: 1.55;
+      text-transform: uppercase;
+      color: var(--color-muted-foreground);
+      text-align: left;
+    }
+
+    .cardify tbody td[data-action] {
+      justify-content: flex-end;
+      border-bottom: 0;
+      gap: 0.5rem;
+    }
+    .cardify tbody td[data-action]::before {
+      content: none;
+    }
+
+    /* full-width block cells (e.g. expand row) */
+    .cardify tbody td.card-full {
+      display: block !important;
+      text-align: left !important;
+    }
+    .cardify tbody td.card-full::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    /* expand rows become plain desktools (no card chrome) */
+    .cardify tbody tr.card-expand {
+      background: color-mix(in oklab, var(--color-muted) 45%, transparent);
+      border: 1px dashed var(--color-border);
+    }
+
+    /* sticky column is just another row in card mode */
+    .cardify .table-sticky-right {
+      position: static;
+      box-shadow: none;
+    }
+  }
+
+  /* Touch devices: column-resize handles have no meaning without a mouse */
+  @media (hover: none) {
+    .cursor-col-resize {
+      display: none;
+    }
+  }
+
   /* Global button guideline
    * - gunakan .btn-primary/.btn-secondary lintas halaman
    * - hindari override struktur (padding/radius/typography/min-height) di CSS halaman

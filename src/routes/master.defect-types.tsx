@@ -390,7 +390,7 @@ function MasterDefect() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="table-pro w-full text-sm">
+              <table className="table-pro cardify w-full text-sm">
                 <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-3 py-3 text-left">No</th>
@@ -409,30 +409,43 @@ function MasterDefect() {
                     const used = col ? (usage?.[col] ?? 0) > 0 : false;
                     return (
                       <tr key={d.id} className="border-t border-border hover:bg-muted/30">
-                        <td className="px-3 py-2.5 text-muted-foreground">
+                        <td data-label="No" className="px-3 py-2.5 text-muted-foreground">
                           {(page - 1) * pageSize + i + 1}
                         </td>
-                        <td className="px-3 py-2.5 font-mono text-xs">{d.kode_defect}</td>
-                        <td className="px-3 py-2.5 font-medium">{d.nama_defect}</td>
-                        <td className="hidden px-3 py-2.5 md:table-cell">
+                        <td data-label="Kode" className="px-3 py-2.5 font-mono text-xs">
+                          {d.kode_defect}
+                        </td>
+                        <td data-label="Nama Defect" className="px-3 py-2.5 font-medium">
+                          {d.nama_defect}
+                        </td>
+                        <td data-label="Kategori" className="hidden px-3 py-2.5 md:table-cell">
                           <span
                             className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${kategoriDefectColor(d.kategori_defect)}`}
                           >
                             {d.kategori_defect}
                           </span>
                         </td>
-                        <td className="hidden px-3 py-2.5 max-w-xs truncate text-xs text-muted-foreground lg:table-cell">
+                        <td
+                          data-label="Deskripsi"
+                          className="hidden px-3 py-2.5 max-w-xs truncate text-xs text-muted-foreground lg:table-cell"
+                        >
                           {d.deskripsi || "-"}
                         </td>
-                        <td className="hidden px-3 py-2.5 text-right font-mono md:table-cell">
+                        <td
+                          data-label="Urutan"
+                          className="hidden px-3 py-2.5 text-right font-mono md:table-cell"
+                        >
                           {d.urutan}
                         </td>
-                        <td className="hidden px-3 py-2.5 text-center md:table-cell">
+                        <td
+                          data-label="Status"
+                          className="hidden px-3 py-2.5 text-center md:table-cell"
+                        >
                           <Badge variant={d.is_active ? "success" : "default"}>
                             {d.is_active ? "Aktif" : "Nonaktif"}
                           </Badge>
                         </td>
-                        <td className="table-sticky-right px-3 py-2.5 text-center">
+                        <td data-action className="table-sticky-right px-3 py-2.5 text-center">
                           <div className="inline-flex gap-1">
                             <button
                               onClick={() => {

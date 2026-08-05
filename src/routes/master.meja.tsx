@@ -185,7 +185,7 @@ function MasterMeja() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="table-pro w-full text-sm">
+                <table className="table-pro cardify w-full text-sm">
                   <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3 text-left">No Meja</th>
@@ -198,9 +198,16 @@ function MasterMeja() {
                   <tbody>
                     {pageRows.map((m) => (
                       <tr key={m.id} className="border-t border-border hover:bg-muted/30">
-                        <td className="px-4 py-2.5 font-semibold">Meja Inspeksi {m.no_meja}</td>
-                        <td className="px-4 py-2.5">{m.nama_meja || "-"}</td>
-                        <td className="hidden px-4 py-2.5 text-center md:table-cell">
+                        <td data-label="No Meja" className="px-4 py-2.5 font-semibold">
+                          Meja Inspeksi {m.no_meja}
+                        </td>
+                        <td data-label="Nama" className="px-4 py-2.5">
+                          {m.nama_meja || "-"}
+                        </td>
+                        <td
+                          data-label="Status"
+                          className="hidden px-4 py-2.5 text-center md:table-cell"
+                        >
                           <Badge
                             variant={
                               m.status === "Aktif"
@@ -213,12 +220,15 @@ function MasterMeja() {
                             {m.status}
                           </Badge>
                         </td>
-                        <td className="hidden px-4 py-2.5 text-center md:table-cell">
+                        <td
+                          data-label="Default Part"
+                          className="hidden px-4 py-2.5 text-center md:table-cell"
+                        >
                           <span className="text-xs text-muted-foreground">
                             {defaultPartsMap ? (defaultPartsMap.get(m.no_meja)?.length ?? 0) : "-"}
                           </span>
                         </td>
-                        <td className="table-sticky-right px-4 py-2.5 text-center">
+                        <td data-action className="table-sticky-right px-4 py-2.5 text-center">
                           <div className="inline-flex gap-1">
                             <button
                               onClick={() => setPartsModal(m)}
