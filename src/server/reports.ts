@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { attachAuthHeader } from "@/integrations/supabase/auth-client-middleware";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { TablesInsert } from "@/integrations/supabase/types";
+import { getSupabaseAdminClientOrNull } from "@/integrations/supabase/client.server";
+import type { Database, TablesInsert } from "@/integrations/supabase/types";
 import { KODE_TO_COLUMN } from "@/lib/format";
 import { toAppError } from "@/lib/errors";
 
@@ -21,7 +23,14 @@ type InputPayload = {
 type DefectInsert = TablesInsert<"inspection_defect_details">;
 type ReportInsert = TablesInsert<"inspection_reports">;
 
+type ReportContext = {
+  supabase: SupabaseClient<Database>;
+  userId: string;
+  demoMode?: boolean;
+};
+
 export const saveInspectionReport = createServerFn({ method: "POST" })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .inputValidator((input: InputPayload) => {
     if (!input.date) throw new Response("Tanggal wajib diisi", { status: 400 });
@@ -34,13 +43,16 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ context, data }) => {
-    const ctx = context as any;
+    const ctx = context as unknown as ReportContext;
 
     if (!ctx.supabase || !ctx.userId) {
-      console.error("[saveInspectionReport] Missing context:", { hasSupabase: !!ctx.supabase, userId: ctx.userId });
       throw new Response("Invalid auth context", { status: 500 });
     }
-    console.log("[saveInspectionReport] Starting. userId:", ctx.userId, "demoMode:", ctx.demoMode);
+
+    // Auth is already validated server-side by requireSupabaseAuth. Use the
+    // service-role client for trusted writes so strict RLS INSERT policies
+    // (which browser clients must satisfy) do not block validated writes.
+    const db = getSupabaseAdminClientOrNull() ?? ctx.supabase;
 
     try {
       // Run meja + part validation in PARALLEL
@@ -59,7 +71,6 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
 
       const { data: meja, error: mejaError } = mejaResult;
       if (mejaError) {
-        console.error("[saveInspectionReport] Meja DB error:", mejaError);
         const appError = toAppError(mejaError);
         throw new Response(appError.message, { status: appError.status });
       }
@@ -72,7 +83,6 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
 
       const { data: part, error: partError } = partResult;
       if (partError) {
-        console.error("[saveInspectionReport] Part DB error:", partError);
         const appError = toAppError(partError);
         throw new Response(appError.message, { status: appError.status });
       }
@@ -100,13 +110,12 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
       };
 
       // Insert report, then detail (detail depends on report.id)
-      const { data: report, error: reportError } = await ctx.supabase
+      const { data: report, error: reportError } = await db
         .from("inspection_reports")
         .insert(reportRow)
         .select("id")
         .single();
       if (reportError) {
-        console.error("[saveInspectionReport] Report insert error:", reportError);
         const appError = toAppError(reportError);
         throw new Response(appError.message, { status: appError.status });
       }
@@ -126,18 +135,14 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
       }
       detailRow.extra_defects = extra;
 
-      const { error: detailError } = await ctx.supabase
-        .from("inspection_defect_details")
-        .insert(detailRow);
+      const { error: detailError } = await db.from("inspection_defect_details").insert(detailRow);
 
       if (!detailError) {
-        console.log("[saveInspectionReport] SUCCESS, reportId:", report.id);
         return { id: report.id };
       }
 
       // Rollback the report if detail insert failed
-      console.error("[saveInspectionReport] Detail insert failed, rolling back:", report.id);
-      const { error: rollbackError } = await ctx.supabase
+      const { error: rollbackError } = await db
         .from("inspection_reports")
         .delete()
         .eq("id", report.id);
@@ -168,6 +173,7 @@ type UpdatePayload = {
 };
 
 export const updateInspectionReport = createServerFn({ method: "POST" })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .inputValidator((input: UpdatePayload) => {
     if (!input.id) throw new Response("ID laporan tidak ditemukan", { status: 400 });
@@ -182,15 +188,19 @@ export const updateInspectionReport = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ context, data }) => {
-    const ctx = context as any;
-    const { data: existing } = await ctx.supabase
+    const ctx = context as unknown as ReportContext;
+    const { data: existing, error: findError } = await ctx.supabase
       .from("inspection_reports")
       .select("id, created_by")
       .eq("id", data.id)
       .maybeSingle();
 
+    if (findError) throw new Response(findError.message, { status: 500 });
     if (!existing) {
       throw new Response("Laporan tidak ditemukan", { status: 404 });
+    }
+    if (existing.created_by !== ctx.userId) {
+      throw new Response("Anda tidak berhak mengubah laporan ini", { status: 403 });
     }
 
     const totalOk = data.qty_check - data.total_ng;
@@ -219,13 +229,34 @@ export const updateInspectionReport = createServerFn({ method: "POST" })
   });
 
 export const deleteInspectionReport = createServerFn({ method: "POST" })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .inputValidator((input: { id: string }) => {
     if (!input.id) throw new Response("ID laporan tidak ditemukan", { status: 400 });
     return input;
   })
   .handler(async ({ context, data }) => {
-    const ctx = context as any;
+    const ctx = context as unknown as ReportContext;
+    const { data: existing, error: findError } = await ctx.supabase
+      .from("inspection_reports")
+      .select("id, created_by")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    if (findError) throw new Response(findError.message, { status: 500 });
+    if (!existing) {
+      throw new Response("Laporan tidak ditemukan", { status: 404 });
+    }
+
+    const { data: roles } = await ctx.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", ctx.userId);
+    const isSupervisor = (roles ?? []).some((r) => r.role === "supervisor");
+    if (existing.created_by !== ctx.userId && !isSupervisor) {
+      throw new Response("Anda tidak berhak menghapus laporan ini", { status: 403 });
+    }
+
     const { error: reportError } = await ctx.supabase
       .from("inspection_reports")
       .delete()

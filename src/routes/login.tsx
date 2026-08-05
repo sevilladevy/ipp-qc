@@ -138,7 +138,7 @@ function LoginPage() {
                 <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
                   <strong>Terlalu banyak percobaan login.</strong>
                   <p className="mt-1">
-                    Sisa尝试: {rateLimitInfo.remaining}. Coba lagi dalam{" "}
+                    Sisa percobaan: {rateLimitInfo.remaining}. Coba lagi dalam{" "}
                     {Math.ceil(rateLimitInfo.resetIn / 60)} menit.
                   </p>
                 </div>
@@ -148,7 +148,8 @@ function LoginPage() {
             {rateLimitInfo && !rateLimitInfo.isLimited && rateLimitInfo.remaining < 3 && (
               <div className="ipp-field">
                 <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground">
-                  <strong>Peringatan:</strong> Sisa尝试: {rateLimitInfo.remaining} sebelum terkunci.
+                  <strong>Peringatan:</strong> Sisa percobaan: {rateLimitInfo.remaining} sebelum
+                  terkunci.
                 </div>
               </div>
             )}

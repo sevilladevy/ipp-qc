@@ -294,7 +294,9 @@ function UserManagementPage() {
                       <td>
                         <RoleBadge role={u.role} />
                       </td>
-                      <td className="hidden date-cell md:table-cell">{formatDateTime(u.created_at)}</td>
+                      <td className="hidden date-cell md:table-cell">
+                        {formatDateTime(u.created_at)}
+                      </td>
                       <td className="hidden date-cell md:table-cell">
                         {u.last_sign_in_at ? formatDateTime(u.last_sign_in_at) : "Belum pernah"}
                       </td>

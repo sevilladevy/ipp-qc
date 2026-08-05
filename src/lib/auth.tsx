@@ -11,11 +11,12 @@ import {
 export type AppRole = "inspector" | "supervisor";
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL as string | undefined;
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 
-// Demo users for development/demo mode (bypass Supabase auth)
+// Demo users for development/demo mode (bypass Supabase auth).
+// Only active when VITE_DEMO_MODE === "true".
 const DEMO_USERS: Record<string, { password: string; role: AppRole; name: string }> = {
   "inspector@demo.com": { password: "demo123", role: "inspector", name: "Demo Inspector" },
-  "inspector@ipp.co.id": { password: "inspector123", role: "inspector", name: "Inspector QC" },
 };
 
 export function isPrivilegedUser(role: AppRole | null, email: string | null | undefined): boolean {
@@ -68,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check for demo session on mount
   useEffect(() => {
+    if (!DEMO_MODE) return;
     const demoSession = sessionStorage.getItem("demo_session");
     if (demoSession) {
       try {
@@ -178,8 +180,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: (error as Error).message };
     }
 
-    // Check for demo user first (bypasses Supabase auth)
-    const demoUser = DEMO_USERS[email.toLowerCase()];
+    // Check for demo user first (bypasses Supabase auth) - only in demo mode
+    const demoUser = DEMO_MODE ? DEMO_USERS[email.toLowerCase()] : undefined;
     if (demoUser && demoUser.password === password) {
       // Clear rate limit on successful demo login
       clearRateLimit(email);

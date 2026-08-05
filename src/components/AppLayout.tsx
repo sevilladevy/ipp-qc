@@ -223,7 +223,9 @@ function Sidebar({
               <div key={item.to}>
                 {showLabels ? (
                   <button
-                    onClick={() => setOpenGroups((prev) => ({ ...prev, [item.to]: !prev[item.to] }))}
+                    onClick={() =>
+                      setOpenGroups((prev) => ({ ...prev, [item.to]: !prev[item.to] }))
+                    }
                     title={item.label}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-200/90 transition-colors hover:bg-white/12 hover:text-cyan-100",

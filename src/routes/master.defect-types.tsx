@@ -424,7 +424,9 @@ function MasterDefect() {
                         <td className="hidden px-3 py-2.5 max-w-xs truncate text-xs text-muted-foreground lg:table-cell">
                           {d.deskripsi || "-"}
                         </td>
-                        <td className="hidden px-3 py-2.5 text-right font-mono md:table-cell">{d.urutan}</td>
+                        <td className="hidden px-3 py-2.5 text-right font-mono md:table-cell">
+                          {d.urutan}
+                        </td>
                         <td className="hidden px-3 py-2.5 text-center md:table-cell">
                           <Badge variant={d.is_active ? "success" : "default"}>
                             {d.is_active ? "Aktif" : "Nonaktif"}

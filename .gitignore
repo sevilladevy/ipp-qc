@@ -44,3 +44,5 @@ reports/e2e-screenshots/
 .env.vercel
 .env.vercel.check
 vite.pid
+vite*.log
+vite*-err.log

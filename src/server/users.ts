@@ -91,6 +91,7 @@ async function listAppUsers(supabase: AppSupabaseClient) {
 }
 
 export const listUsers = createServerFn({ method: "POST" })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .handler(async ({ context }) => {
     const ctx = context as unknown as ServerContext;
@@ -145,6 +146,7 @@ export const listUsers = createServerFn({ method: "POST" })
   });
 
 export const inviteUser = createServerFn({ method: "POST" })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .inputValidator(
     (input: {
@@ -175,20 +177,21 @@ export const inviteUser = createServerFn({ method: "POST" })
       user_metadata: { full_name: data.fullName },
     });
     if (error || !created.user) {
-      console.error("[DEBUG] Create error:", error);
       throw new Response(error?.message ?? "Gagal membuat user", { status: 400 });
     }
-    console.log("[DEBUG] User created:", created.user.id);
 
     const { error: roleErr } = await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: created.user.id, role: data.role }, { onConflict: "user_id,role" });
-    console.log("[DEBUG] Role upsert:", roleErr);
+    if (roleErr) {
+      throw new Response("User dibuat tetapi gagal menetapkan role", { status: 500 });
+    }
 
     return { id: created.user.id };
   });
 
 export const promoteToSupervisor = createServerFn({ method: "POST" })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .inputValidator((input: { userId: string }) => {
     if (!input.userId) throw new Response("userId wajib", { status: 400 });
@@ -216,6 +219,7 @@ export const promoteToSupervisor = createServerFn({ method: "POST" })
   });
 
 export const deleteUser = createServerFn({ method: "POST" })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   .middleware([attachAuthHeader, requireSupabaseAuth] as any)
   .inputValidator((input: { userId: string }) => {
     if (!input.userId) throw new Response("userId wajib", { status: 400 });

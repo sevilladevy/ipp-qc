@@ -60,9 +60,7 @@ export function SubmitConfirmModal({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Konfirmasi Submit Laporan</DialogTitle>
-          <DialogDescription>
-            Periksa kembali data sebelum disimpan ke database.
-          </DialogDescription>
+          <DialogDescription>Periksa kembali data sebelum disimpan ke database.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 text-sm">
@@ -128,12 +126,7 @@ export function SubmitConfirmModal({
           <button type="button" onClick={onCancel} disabled={submitting} className="btn-secondary">
             Batal
           </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={submitting}
-            className="btn-primary"
-          >
+          <button type="button" onClick={onConfirm} disabled={submitting} className="btn-primary">
             {submitting ? "Menyimpan..." : "Ya, Simpan"}
           </button>
         </DialogFooter>
@@ -142,15 +135,7 @@ export function SubmitConfirmModal({
   );
 }
 
-function Row({
-  label,
-  value,
-  span,
-}: {
-  label: string;
-  value: string;
-  span?: boolean;
-}) {
+function Row({ label, value, span }: { label: string; value: string; span?: boolean }) {
   return (
     <div className={span ? "col-span-2" : ""}>
       <dt className="text-muted-foreground">{label}</dt>

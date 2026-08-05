@@ -27,9 +27,7 @@ export function SubmitSuccessModal({
         </div>
         <DialogHeader>
           <DialogTitle>Laporan Berhasil Disimpan</DialogTitle>
-          <DialogDescription>
-            Data inspeksi telah tersimpan di database.
-          </DialogDescription>
+          <DialogDescription>Data inspeksi telah tersimpan di database.</DialogDescription>
         </DialogHeader>
 
         {summary && (

@@ -373,10 +373,25 @@ function InputPage() {
           label="Pass Rate"
           value={`${(passRate * 100).toFixed(1)}%`}
           tone={passRateStatus}
-          icon={passRate >= 0.98 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+          icon={
+            passRate >= 0.98 ? (
+              <TrendingUp className="h-4 w-4" />
+            ) : (
+              <TrendingDown className="h-4 w-4" />
+            )
+          }
         />
-        <KpiMini label="Qty Check" value={String(formState.qtyCheck)} icon={<Activity className="h-4 w-4" />} />
-        <KpiMini label="OK Parts" value={String(ok)} tone="success" icon={<Check className="h-4 w-4" />} />
+        <KpiMini
+          label="Qty Check"
+          value={String(formState.qtyCheck)}
+          icon={<Activity className="h-4 w-4" />}
+        />
+        <KpiMini
+          label="OK Parts"
+          value={String(ok)}
+          tone="success"
+          icon={<Check className="h-4 w-4" />}
+        />
         <KpiMini
           label="NG Parts"
           value={String(totalDefects)}
@@ -419,7 +434,11 @@ function InputPage() {
                       type="button"
                       onClick={() => {
                         updateField("shift", s);
-                        const defaults: Record<Shift, string> = { A: "07:00", B: "15:00", C: "23:00" };
+                        const defaults: Record<Shift, string> = {
+                          A: "07:00",
+                          B: "15:00",
+                          C: "23:00",
+                        };
                         updateField("jamMulai", defaults[s]);
                       }}
                       className={cn("segmented-item", formState.shift === s && "active")}
@@ -738,11 +757,7 @@ function InputPage() {
 
       <div className="mobile-action-bar lg:hidden">
         <div className={cn("status-badge", defectOverflow ? "error" : "success")}>
-          {defectOverflow ? (
-            <AlertTriangle className="h-4 w-4" />
-          ) : (
-            <Check className="h-4 w-4" />
-          )}
+          {defectOverflow ? <AlertTriangle className="h-4 w-4" /> : <Check className="h-4 w-4" />}
           {defectOverflow ? "NG > Qty" : "Ready"}
         </div>
         <button type="button" onClick={() => resetForm(false)} className="btn-secondary flex-1">
@@ -997,7 +1012,14 @@ function InputPage() {
         onCancel={() => setConfirmOpen(false)}
       />
 
-      <SubmitSuccessModal open={success !== null} summary={success} onClose={() => { setSuccess(null); window.location.reload(); }} />
+      <SubmitSuccessModal
+        open={success !== null}
+        summary={success}
+        onClose={() => {
+          setSuccess(null);
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }
