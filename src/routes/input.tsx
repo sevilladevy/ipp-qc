@@ -780,9 +780,11 @@ function InputPage() {
                       type="button"
                       className="defect-chip"
                       onClick={() =>
-                        document
-                          .getElementById(categoryId(category))
-                          ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                        requestAnimationFrame(() => {
+                          document
+                            .getElementById(categoryId(category))
+                            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        })
                       }
                     >
                       {category}

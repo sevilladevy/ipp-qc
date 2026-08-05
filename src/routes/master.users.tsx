@@ -65,6 +65,7 @@ function UserManagementPage() {
       };
     },
     enabled: isSupervisor,
+    retry: 1,
   });
 
   const promoteMut = useMutation({
