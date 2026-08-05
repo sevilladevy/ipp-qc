@@ -69,7 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check for demo session on mount
   useEffect(() => {
-    if (!DEMO_MODE) return;
+    if (!DEMO_MODE) {
+      // Purge stale demo sessions left by an older demo-enabled build.
+      // Otherwise a lingering demo_session would hijack server-function auth.
+      sessionStorage.removeItem("demo_session");
+      return;
+    }
     const demoSession = sessionStorage.getItem("demo_session");
     if (demoSession) {
       try {
@@ -222,6 +227,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Clear rate limit on successful login
     clearRateLimit(email);
     setRateLimitInfo(undefined);
+
+    // Ensure a leftover demo session never shadows the real session
+    sessionStorage.removeItem("demo_session");
     return { error: null };
   }
 
