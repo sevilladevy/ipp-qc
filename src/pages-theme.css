@@ -2094,9 +2094,265 @@
 
 @media (max-width: 1023px) {
   .inspection-page .kpi-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    position: sticky;
+    top: 3rem;
+    z-index: 20;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+    background: color-mix(in oklab, var(--color-background) 90%, transparent);
+    backdrop-filter: blur(8px);
   }
+
+  .inspection-page .kpi-mini {
+    padding: 0.4rem 0.5rem;
+    border-radius: var(--radius-sm);
+    gap: 0;
+  }
+
+  .inspection-page .kpi-mini-label {
+    font-size: 0.58rem;
+  }
+
+  .inspection-page .kpi-mini-value {
+    font-size: 1rem;
+  }
+
+  .inspection-page .kpi-mini-icon {
+    display: none;
+  }
+
   .inspection-page {
     padding-bottom: 5rem;
   }
+}
+
+/* ---- Mobile UX upgrade: defect stepper, tools, floating action bar ---- */
+
+.inspection-page .defect-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.inspection-page .defect-tools-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inspection-page .defect-search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.inspection-page .defect-search svg {
+  position: absolute;
+  left: 0.75rem;
+  height: 1rem;
+  width: 1rem;
+  color: var(--color-muted-foreground);
+  pointer-events: none;
+}
+
+.inspection-page .defect-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.9rem 0.5rem 2.2rem;
+  border: 2px solid rgb(203 213 225);
+  border-radius: 12px;
+  background: var(--color-card);
+  color: var(--color-foreground);
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.inspection-page .defect-search input:focus {
+  border-color: rgb(37 99 235);
+  box-shadow: 0 0 0 4px rgb(37 99 235 / 0.12);
+}
+
+.inspection-page .defect-toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.85rem;
+  border: 2px solid rgb(203 213 225);
+  border-radius: 12px;
+  background: var(--color-card);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.inspection-page .defect-toggle.active {
+  border-color: var(--color-primary);
+  background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+}
+
+.inspection-page .defect-cat-chips {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scrollbar-width: none;
+}
+
+.inspection-page .defect-cat-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.inspection-page .defect-chip {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--color-input);
+  border-radius: 999px;
+  background: var(--color-card);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.inspection-page .defect-chip:active {
+  background: color-mix(in oklab, var(--color-primary) 12%, transparent);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.inspection-page .defect-category {
+  scroll-margin-top: 8.5rem;
+}
+
+.inspection-page .defect-tools-empty {
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-muted-foreground);
+}
+
+.inspection-page .defect-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .inspection-page .defect-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+}
+
+.inspection-page .defect-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem 0.4rem 0.75rem;
+  border: 1px solid var(--color-input);
+  border-radius: 12px;
+  background: var(--color-card);
+}
+
+.inspection-page .defect-row-name {
+  min-width: 0;
+  flex: 1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspection-page .defect-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.inspection-page .stepper-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  border: 2px solid rgb(203 213 225);
+  border-radius: 10px;
+  background: var(--color-card);
+  color: var(--color-foreground);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.inspection-page .stepper-btn:active {
+  border-color: var(--color-primary);
+  background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+}
+
+.inspection-page .stepper-count {
+  width: 2.9rem;
+  min-height: 0;
+  padding: 0.35rem 0.15rem;
+  text-align: center;
+  border: 2px solid rgb(203 213 225);
+  border-radius: 10px;
+  background: var(--color-card);
+  color: var(--color-foreground);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  outline: none;
+}
+
+.inspection-page .stepper-count:focus {
+  border-color: rgb(37 99 235);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.12);
+}
+
+@media (max-width: 640px) {
+  .inspection-page .hero-copy h1 {
+    font-size: 1.15rem;
+  }
+
+  .inspection-page .hero-copy p {
+    display: none;
+  }
+}
+
+.inspection-page .mobile-action-bar {
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+  width: auto;
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 8px 30px color-mix(in oklab, var(--color-background) 40%, transparent);
+}
+
+.inspection-page .mobile-action-bar .status-badge {
+  width: auto;
+  margin-bottom: 0;
+  flex: 0 0 auto;
 }

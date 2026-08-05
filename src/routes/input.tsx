@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
   memo,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
   type FormEvent,
   type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
   type RefObject,
   type ReactNode,
 } from "react";
@@ -86,6 +88,10 @@ function getPassRate(row: { total_ok: number | null; qty_check: number }) {
   return row.qty_check > 0 ? (row.total_ok ?? 0) / row.qty_check : 0;
 }
 
+function categoryId(category: string) {
+  return `defect-cat-${category.replace(/\s+/g, "-").toLowerCase()}`;
+}
+
 const EXPORT_COLUMNS = [
   {
     key: "created_at",
@@ -107,6 +113,46 @@ const EXPORT_COLUMNS = [
   },
 ];
 
+function usePressRepeat(
+  onPress: () => void,
+  { delay = 350, interval = 70 }: { delay?: number; interval?: number } = {},
+) {
+  const onPressRef = useRef(onPress);
+  onPressRef.current = onPress;
+  const timeoutRef = useRef<number | null>(null);
+  const intervalRef = useRef<number | null>(null);
+
+  const clear = useCallback(() => {
+    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+    if (intervalRef.current !== null) window.clearInterval(intervalRef.current);
+    timeoutRef.current = null;
+    intervalRef.current = null;
+  }, []);
+
+  const start = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      onPressRef.current();
+      timeoutRef.current = window.setTimeout(() => {
+        intervalRef.current = window.setInterval(() => onPressRef.current(), interval);
+      }, delay);
+    },
+    [delay, interval],
+  );
+
+  const stop = useCallback(() => clear(), [clear]);
+
+  useEffect(() => clear, [clear]);
+
+  return {
+    onPointerDown: start,
+    onPointerUp: stop,
+    onPointerLeave: stop,
+    onPointerCancel: stop,
+    onContextMenu: (event: ReactPointerEvent<HTMLButtonElement>) => event.preventDefault(),
+  };
+}
+
 const DefectInput = memo(function DefectInput({
   defectType,
   value,
@@ -124,34 +170,63 @@ const DefectInput = memo(function DefectInput({
   submitRef: RefObject<HTMLButtonElement | null>;
   updateDefect: (kodeDefect: string, value: number) => void;
 }) {
+  const increment = () => updateDefect(defectType.kode_defect, value + 1);
+  const decrement = () => updateDefect(defectType.kode_defect, Math.max(0, value - 1));
+  const plusHold = usePressRepeat(increment);
+  const minusHold = usePressRepeat(decrement);
+
   return (
-    <Field label={defectType.nama_defect}>
-      <input
-        ref={index === 0 ? firstDefectRef : undefined}
-        type="number"
-        inputMode="numeric"
-        enterKeyHint={index < totalDefects - 1 ? "next" : "done"}
-        min={0}
-        value={value}
-        onChange={(e) => updateDefect(defectType.kode_defect, Number(e.target.value))}
-        onKeyDown={(e) => {
-          if (e.key !== "Enter") return;
-          e.preventDefault();
-          if (index >= totalDefects - 1) {
-            focusElement(submitRef);
-            return;
-          }
-          const container = e.currentTarget.closest(".defect-categories");
-          const allInputs = container?.querySelectorAll<HTMLInputElement>("input[type='number']");
-          const nextInput = allInputs?.[index + 1];
-          if (nextInput) {
-            nextInput.focus();
-            nextInput.select();
-          }
-        }}
-        className="input-field input-number"
-      />
-    </Field>
+    <div className="defect-row">
+      <span className="defect-row-name" title={defectType.nama_defect}>
+        {defectType.nama_defect}
+      </span>
+      <div className="defect-stepper">
+        <button
+          type="button"
+          aria-label={`Kurangi ${defectType.nama_defect}`}
+          className="stepper-btn"
+          {...minusHold}
+        >
+          −
+        </button>
+        <input
+          ref={(el) => {
+            if (index === 0) firstDefectRef.current = el;
+          }}
+          type="number"
+          inputMode="numeric"
+          enterKeyHint={index < totalDefects - 1 ? "next" : "done"}
+          min={0}
+          value={value}
+          aria-label={defectType.nama_defect}
+          onChange={(e) => updateDefect(defectType.kode_defect, Number(e.target.value))}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            if (index >= totalDefects - 1) {
+              focusElement(submitRef);
+              return;
+            }
+            const container = e.currentTarget.closest(".defect-categories");
+            const allInputs = container?.querySelectorAll<HTMLInputElement>("input[type='number']");
+            const nextInput = allInputs?.[index + 1];
+            if (nextInput) {
+              nextInput.focus();
+              nextInput.select();
+            }
+          }}
+          className="stepper-count"
+        />
+        <button
+          type="button"
+          aria-label={`Tambah ${defectType.nama_defect}`}
+          className="stepper-btn"
+          {...plusHold}
+        >
+          +
+        </button>
+      </div>
+    </div>
   );
 });
 
@@ -204,6 +279,8 @@ function InputPage() {
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [success, setSuccess] = useState<SaveSummary | null>(null);
+  const [defectSearch, setDefectSearch] = useState("");
+  const [onlyFilled, setOnlyFilled] = useState(false);
 
   const handleSaveClick = () => {
     const error = validate();
@@ -216,14 +293,28 @@ function InputPage() {
 
   const groupedDefects = useMemo(() => {
     if (!defectTypes?.length) return [];
+    const keyword = defectSearch.trim().toLowerCase();
     const groups: Record<string, typeof defectTypes> = {};
     for (const dt of defectTypes) {
+      if (onlyFilled && !(formState.defects[dt.kode_defect] ?? 0)) continue;
+      if (
+        keyword &&
+        !dt.nama_defect.toLowerCase().includes(keyword) &&
+        !dt.kode_defect.toLowerCase().includes(keyword)
+      ) {
+        continue;
+      }
       const cat = dt.kategori_defect ?? "Lainnya";
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(dt);
     }
     return Object.entries(groups);
-  }, [defectTypes]);
+  }, [defectTypes, defectSearch, onlyFilled, formState.defects]);
+
+  const visibleDefectCount = useMemo(
+    () => groupedDefects.reduce((count, [, list]) => count + list.length, 0),
+    [groupedDefects],
+  );
 
   // Flat index map for keyboard navigation across categories
   const defectIndexMap = useMemo(() => {
@@ -570,18 +661,7 @@ function InputPage() {
                   />
                 </Field>
               </div>
-            </div>
-          </Card>
 
-          <Card className="input-card">
-            <div className="card-header">
-              <div>
-                <div className="card-kicker">Volume</div>
-                <h3 className="card-title">Waktu & Volume</h3>
-              </div>
-            </div>
-
-            <div className="input-grid">
               <Field label="Jam Mulai">
                 <input
                   ref={jamMulaiRef}
@@ -674,40 +754,82 @@ function InputPage() {
                 </div>
               )}
 
-              <div className="defect-categories space-y-3">
-                {groupedDefects.map(([category, defects]) => (
-                  <div
-                    key={category}
-                    className="defect-category rounded-lg border border-border/60 bg-muted/10"
+              <div className="defect-tools">
+                <div className="defect-tools-row">
+                  <label className="defect-search">
+                    <Search className="h-4 w-4" />
+                    <input
+                      type="search"
+                      value={defectSearch}
+                      onChange={(e) => setDefectSearch(e.target.value)}
+                      placeholder="Cari defect..."
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setOnlyFilled((v) => !v)}
+                    className={cn("defect-toggle", onlyFilled && "active")}
                   >
-                    <div
-                      className={`flex items-center justify-between gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider ${kategoriDefectColor(category)}`}
+                    {onlyFilled ? "Semua" : "Hanya > 0"}
+                  </button>
+                </div>
+                <div className="defect-cat-chips">
+                  {groupedDefects.map(([category]) => (
+                    <button
+                      key={category}
+                      type="button"
+                      className="defect-chip"
+                      onClick={() =>
+                        document
+                          .getElementById(categoryId(category))
+                          ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                      }
                     >
-                      <span>{category}</span>
-                      <span className="text-[10px] font-normal opacity-70">
-                        {defects.length} jenis
-                      </span>
-                    </div>
-                    <div className="defect-grid p-3">
-                      {defects.map((defectType) => {
-                        const flatIdx = defectIndexMap.get(defectType.kode_defect) ?? 0;
-                        return (
-                          <DefectInput
-                            key={defectType.id}
-                            defectType={defectType}
-                            value={formState.defects[defectType.kode_defect] ?? 0}
-                            index={flatIdx}
-                            totalDefects={defectTypes?.length ?? 0}
-                            firstDefectRef={firstDefectRef}
-                            submitRef={submitRef}
-                            updateDefect={updateDefect}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+                      {category}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {groupedDefects.length === 0 ? (
+                <div className="defect-tools-empty">Tidak ada defect yang cocok dengan filter.</div>
+              ) : (
+                <div className="defect-categories space-y-3">
+                  {groupedDefects.map(([category, defects]) => (
+                    <div
+                      key={category}
+                      id={categoryId(category)}
+                      className="defect-category rounded-lg border border-border/60 bg-muted/10"
+                    >
+                      <div
+                        className={`flex items-center justify-between gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider ${kategoriDefectColor(category)}`}
+                      >
+                        <span>{category}</span>
+                        <span className="text-[10px] font-normal opacity-70">
+                          {defects.length} jenis
+                        </span>
+                      </div>
+                      <div className="defect-grid p-3">
+                        {defects.map((defectType) => {
+                          const flatIdx = defectIndexMap.get(defectType.kode_defect) ?? 0;
+                          return (
+                            <DefectInput
+                              key={defectType.id}
+                              defectType={defectType}
+                              value={formState.defects[defectType.kode_defect] ?? 0}
+                              index={flatIdx}
+                              totalDefects={visibleDefectCount}
+                              firstDefectRef={firstDefectRef}
+                              submitRef={submitRef}
+                              updateDefect={updateDefect}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
           ) : (
             <Card className="empty-state">
@@ -1017,7 +1139,7 @@ function InputPage() {
         summary={success}
         onClose={() => {
           setSuccess(null);
-          window.location.reload();
+          requestAnimationFrame(() => focusElement(partTriggerRef));
         }}
       />
     </div>
