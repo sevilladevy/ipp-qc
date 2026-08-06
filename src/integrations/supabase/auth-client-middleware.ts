@@ -9,6 +9,10 @@ function isUnauthorizedError(error: unknown): boolean {
     if (status === 401) return true;
     const response = (error as { response?: unknown }).response;
     if (response instanceof Response && response.status === 401) return true;
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string") {
+      if (message.includes("Unauthorized") || message.includes("401")) return true;
+    }
   }
   return false;
 }
