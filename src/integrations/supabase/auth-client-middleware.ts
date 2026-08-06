@@ -41,13 +41,43 @@ export const attachAuthHeader = createMiddleware({ type: "function" }).client(as
     }
   }
 
-  // Normal Supabase auth
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return await next({
-    headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
-  }).catch(handleRequestError);
+  // Normal Supabase auth - try to get and refresh session
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    // If no session or error, send empty headers
+    if (error || !session) {
+      return next({}).catch(handleRequestError);
+    }
+
+    // Check if token is expired
+    const expiresAt = session.expires_at;
+    const now = Math.floor(Date.now() / 1000);
+    const isExpired = expiresAt ? now >= expiresAt : false;
+
+    if (isExpired) {
+      // Try to refresh the token
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+
+      if (refreshError || !refreshData.session) {
+        // Refresh failed - clear session and don't send auth header
+        console.warn("Session expired and refresh failed:", refreshError?.message);
+        return next({}).catch(handleRequestError);
+      }
+
+      return next({
+        headers: { Authorization: `Bearer ${refreshData.session.access_token}` },
+      }).catch(handleRequestError);
+    }
+
+    // Token is still valid
+    return next({
+      headers: session.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+    }).catch(handleRequestError);
+  } catch (e) {
+    console.error("Auth attach error:", e);
+    return next({}).catch(handleRequestError);
+  }
 });
 
 // Centralized handler for server-function auth failures. An expired or
@@ -58,42 +88,34 @@ async function handleRequestError(error: unknown): Promise<never> {
   const unauthorized = isUnauthorizedError(error);
 
   if (typeof window !== "undefined") {
-    let serialized = "<unknown>";
-    try {
-      serialized = JSON.stringify(error, (k, v) => (k.startsWith("_") ? undefined : v));
-    } catch {
-      /* ignore */
-    }
     console.error("[auth-middleware] server request rejected", {
       unauthorized,
       name: (error as { name?: unknown })?.name,
       message: (error as { message?: unknown })?.message,
-      ctor: Object.prototype.toString.call(error),
-      ctorName: (error as { constructor?: { name?: string } })?.constructor?.name,
       httpStatus: (error as { status?: unknown })?.status,
-      responseStatus: (error as { response?: { status?: unknown } })?.response?.status,
-      serialized,
     });
   }
 
   if (!unauthorized) {
     if (typeof window !== "undefined") {
-      console.error("[auth-middleware] unauthorized=false — NOT redirecting; throwing");
+      console.error("[auth-middleware] non-auth error — rethrowing");
     }
     throw error;
   }
 
+  // Handle 401 - redirect to login
   if (typeof window !== "undefined") {
-    // Redirect FIRST — never block navigation on signOut (it can hang when the
-    // token is already invalid). signOut runs fire-and-forget.
+    // Clear all local auth data
     for (const key of Object.keys(localStorage)) {
       if (key.startsWith("sb-")) localStorage.removeItem(key);
     }
     sessionStorage.removeItem("demo_session");
+    // Sign out is fire-and-forget (can fail if token already invalid)
     void supabase.auth.signOut().catch(() => {});
+    // Redirect to login if not already there
     if (!window.location.pathname.startsWith("/login")) {
       console.error("[auth-middleware] redirecting to /login");
-      window.location.assign("/login");
+      window.location.assign("/login?session=expired");
     }
   }
   throw error;

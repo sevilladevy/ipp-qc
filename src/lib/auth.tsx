@@ -96,13 +96,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let active = true;
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!active) return;
-      if (event === "SIGNED_OUT" && !newSession) {
+
+      if (event === "TOKEN_REFRESHED") {
+        // Token successfully refreshed
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        return;
+      }
+
+      if (event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        // Clear all local storage keys starting with 'sb-'
         for (const key of Object.keys(localStorage)) {
           if (key.startsWith("sb-")) localStorage.removeItem(key);
         }
       }
+
+      if (event === "SIGNED_OUT" && !newSession) {
+        // User signed out - clear state and redirect to login
+        setSession(null);
+        setUser(null);
+        setRole(null);
+        // Redirect to login if not already there
+        if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+          window.location.href = "/login?expired=true";
+        }
+        return;
+      }
+
       setSession(newSession);
       setUser(newSession?.user ?? null);
     });
@@ -119,6 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         for (const key of Object.keys(localStorage)) {
           if (key.startsWith("sb-")) localStorage.removeItem(key);
         }
+        setSession(null);
+        setUser(null);
+        setRole(null);
       })
       .finally(() => {
         if (active) setAuthReady(true);
@@ -244,9 +269,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      await supabase.auth.signOut();
+      // Try to refresh session first, then sign out
+      const { error: refreshError } = await supabase.auth.refreshSession();
+
+      if (refreshError) {
+        // If refresh fails (session already expired), just clear local state
+        console.warn("Session already expired, clearing local state");
+      } else {
+        await supabase.auth.signOut();
+      }
     } catch (error) {
       console.error("Sign out failed", error);
+    } finally {
+      // Always clear local state regardless of server response
+      setSession(null);
+      setUser(null);
+      setRole(null);
+      setDemoMode(false);
     }
   }
 
