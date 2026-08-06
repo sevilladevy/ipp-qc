@@ -9,53 +9,53 @@ test.describe("Login", () => {
     await page.goto(`${BASE_URL}/login`);
 
     // Check page loads without errors
-    await expect(page.locator('input[type="email"]')).toBeVisible();
-    await expect(page.locator('input[type="password"]')).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toBeVisible();
+    await expect(page.getByRole("textbox", { name: /email/i })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: /password/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /login|masuk|submit/i })).toBeVisible();
 
-    // Check page title contains IPP
-    await expect(page.locator("text=Injeksi Plastik Pasifik")).toBeVisible();
+    // Check page title contains IPP - use first() to avoid strict mode violation
+    await expect(page.getByRole("heading", { name: /injeksi plastik pasifik/i })).toBeVisible();
   });
 
   test("should show validation error for empty fields", async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
 
     // Submit without filling
-    await page.click('button[type="submit"]');
+    await page.getByRole("button", { name: /login|masuk|submit/i }).click();
 
-    // Toast should appear
-    await expect(page.locator("text=Email dan password wajib diisi")).toBeVisible();
+    // Toast should appear - use first() for multiple matches
+    await expect(page.getByText(/email dan password wajib diisi/i).first()).toBeVisible({ timeout: 5000 });
   });
 
   test("should login successfully with valid credentials", async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
 
     // Fill credentials
-    await page.fill('input[type="email"]', EMAIL);
-    await page.fill('input[type="password"]', PASSWORD);
+    await page.getByRole("textbox", { name: /email/i }).fill(EMAIL);
+    await page.getByRole("textbox", { name: /password/i }).fill(PASSWORD);
 
     // Submit
-    await page.click('button[type="submit"]');
+    await page.getByRole("button", { name: /login|masuk|submit/i }).click();
 
     // Wait for redirect to dashboard
     await page.waitForURL(BASE_URL + "/", { timeout: 30000 });
 
-    // Check dashboard loads
-    await expect(page.locator("text=Dashboard")).toBeVisible();
+    // Check dashboard loads - use first() for multiple matches
+    await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("should show error for invalid credentials", async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
 
     // Fill with wrong credentials
-    await page.fill('input[type="email"]', "wrong@example.com");
-    await page.fill('input[type="password"]', "wrongpassword");
+    await page.getByRole("textbox", { name: /email/i }).fill("wrong@example.com");
+    await page.getByRole("textbox", { name: /password/i }).fill("wrongpassword");
 
     // Submit
-    await page.click('button[type="submit"]');
+    await page.getByRole("button", { name: /login|masuk|submit/i }).click();
 
-    // Error should appear
-    await expect(page.locator("text=Invalid login credentials")).toBeVisible({ timeout: 10000 });
+    // Error should appear - use first() for multiple matches
+    await expect(page.getByText(/invalid login credentials/i).first()).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -63,9 +63,9 @@ test.describe("Authentication", () => {
   test.beforeEach(async ({ page }) => {
     // Login before each test
     await page.goto(`${BASE_URL}/login`);
-    await page.fill('input[type="email"]', EMAIL);
-    await page.fill('input[type="password"]', PASSWORD);
-    await page.click('button[type="submit"]');
+    await page.getByRole("textbox", { name: /email/i }).fill(EMAIL);
+    await page.getByRole("textbox", { name: /password/i }).fill(PASSWORD);
+    await page.getByRole("button", { name: /login|masuk|submit/i }).click();
     await page.waitForURL(BASE_URL + "/", { timeout: 30000 });
   });
 
@@ -77,19 +77,19 @@ test.describe("Authentication", () => {
     await page.goto(`${BASE_URL}/input`);
 
     // Should redirect to login
-    await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("textbox", { name: /email/i })).toBeVisible({ timeout: 10000 });
   });
 
   test("should show user email in header", async ({ page }) => {
     // Check user email is displayed
-    await expect(page.locator(`text=${EMAIL}`).first()).toBeVisible();
+    await expect(page.getByText(EMAIL).first()).toBeVisible();
   });
 
   test("should logout successfully", async ({ page }) => {
     // Click logout button
-    await page.locator('button[title="Logout"]').click();
+    await page.getByRole("button", { name: /logout|sign out|keluar/i }).click();
 
     // Should redirect to login
-    await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("textbox", { name: /email/i })).toBeVisible({ timeout: 10000 });
   });
 });
