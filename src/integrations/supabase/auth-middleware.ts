@@ -31,33 +31,31 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
     }
 
     if (!authHeader?.startsWith("Bearer ")) {
-      throw new Response("Unauthorized", { status: 401 });
+      throw new Response("Unauthorized: Missing authorization header", { status: 401 });
     }
 
     const token = authHeader.replace("Bearer ", "");
 
-    // Create client with proper session to ensure RLS context is set
+    // Create client with the token directly in the global headers
+    // This allows RLS policies to work without needing setSession
     const supabase = createClient<Database>(SUPABASE_URL!, SUPABASE_PUBLISHABLE_KEY!, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
       auth: {
-        persistSession: true,
+        storage: undefined,
+        persistSession: false,
         autoRefreshToken: false,
-        detectSessionInUrl: false,
       },
     });
 
-    // Set the session with the user's token to properly propagate auth context to RLS
-    const { error: sessionError } = await supabase.auth.setSession({
-      access_token: token,
-      refresh_token: "", // Refresh token not needed for server functions
-    });
+    // Verify the user using getUser which validates the JWT
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
 
-    if (sessionError) {
-      throw new Response("Unauthorized: Invalid token", { status: 401 });
-    }
-
-    // Verify the user exists
-    const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData?.user) {
+      console.error("[auth-middleware] Token validation failed:", userError?.message);
       throw new Response("Unauthorized: Invalid token", { status: 401 });
     }
 
