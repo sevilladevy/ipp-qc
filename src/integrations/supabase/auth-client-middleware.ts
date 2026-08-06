@@ -55,19 +55,44 @@ export const attachAuthHeader = createMiddleware({ type: "function" }).client(as
 // stale session and redirecting to login breaks the React Query retry loop
 // and returns the user to a clean authenticated state.
 async function handleRequestError(error: unknown): Promise<never> {
-  if (!isUnauthorizedError(error)) throw error;
+  const unauthorized = isUnauthorizedError(error);
 
   if (typeof window !== "undefined") {
+    let serialized = "<unknown>";
     try {
-      await supabase.auth.signOut();
+      serialized = JSON.stringify(error, (k, v) => (k.startsWith("_") ? undefined : v));
     } catch {
-      /* ignore sign-out failures */
+      /* ignore */
     }
+    console.error("[auth-middleware] server request rejected", {
+      unauthorized,
+      name: (error as { name?: unknown })?.name,
+      message: (error as { message?: unknown })?.message,
+      ctor: Object.prototype.toString.call(error),
+      ctorName: (error as { constructor?: { name?: string } })?.constructor?.name,
+      httpStatus: (error as { status?: unknown })?.status,
+      responseStatus: (error as { response?: { status?: unknown } })?.response?.status,
+      serialized,
+    });
+  }
+
+  if (!unauthorized) {
+    if (typeof window !== "undefined") {
+      console.error("[auth-middleware] unauthorized=false — NOT redirecting; throwing");
+    }
+    throw error;
+  }
+
+  if (typeof window !== "undefined") {
+    // Redirect FIRST — never block navigation on signOut (it can hang when the
+    // token is already invalid). signOut runs fire-and-forget.
     for (const key of Object.keys(localStorage)) {
       if (key.startsWith("sb-")) localStorage.removeItem(key);
     }
     sessionStorage.removeItem("demo_session");
+    void supabase.auth.signOut().catch(() => {});
     if (!window.location.pathname.startsWith("/login")) {
+      console.error("[auth-middleware] redirecting to /login");
       window.location.assign("/login");
     }
   }
