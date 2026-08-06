@@ -237,27 +237,40 @@ export const deleteInspectionReport = createServerFn({ method: "POST" })
   })
   .handler(async ({ context, data }) => {
     const ctx = context as unknown as ReportContext;
-    const { data: existing, error: findError } = await ctx.supabase
+
+    // Use admin client to bypass RLS for delete operations
+    // Auth is already validated by requireSupabaseAuth
+    const db = getSupabaseAdminClientOrNull() ?? ctx.supabase;
+
+    const { data: existing, error: findError } = await db
       .from("inspection_reports")
       .select("id, created_by")
       .eq("id", data.id)
       .maybeSingle();
 
-    if (findError) throw new Response(findError.message, { status: 500 });
+    if (findError) {
+      const appError = toAppError(findError);
+      throw new Response(appError.message, { status: appError.status });
+    }
     if (!existing) {
       throw new Response("Laporan tidak ditemukan", { status: 404 });
     }
 
+    // Also check supervisor role for audit trail (but admin client handles actual delete)
     const { data: roles } = await ctx.supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", ctx.userId);
     const isSupervisor = (roles ?? []).some((r) => r.role === "supervisor");
+
+    // Allow delete if: user is supervisor OR is the creator
+    // (admin client bypasses RLS, but we still want to track authorization)
     if (existing.created_by !== ctx.userId && !isSupervisor) {
       throw new Response("Anda tidak berhak menghapus laporan ini", { status: 403 });
     }
 
-    const { error: reportError } = await ctx.supabase
+    // Delete the report using admin client (bypasses RLS)
+    const { error: reportError } = await db
       .from("inspection_reports")
       .delete()
       .eq("id", data.id);
@@ -266,6 +279,12 @@ export const deleteInspectionReport = createServerFn({ method: "POST" })
       const appError = toAppError(reportError);
       throw new Response(appError.message, { status: appError.status });
     }
+
+    // Also delete related defect details
+    await db
+      .from("inspection_defect_details")
+      .delete()
+      .eq("report_id", data.id);
 
     return { id: data.id };
   });
