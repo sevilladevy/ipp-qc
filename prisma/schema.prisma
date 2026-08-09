@@ -1,0 +1,190 @@
+// Prisma schema for IPP Quality Inspection - migrated to local PostgreSQL.
+// Mirrors the live Supabase production schema (verified against live DB),
+// with two additions for local session-cookie auth:
+//   - password_hash on profiles (bcrypt)
+//   - sessions (httpOnly cookie-backed sessions)
+//
+// All scalar field names match the DB column names (snake_case) so that
+// Prisma results keep the same shape as the previous Supabase Tables<> rows.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AppRole {
+  inspector
+  supervisor
+}
+
+enum InspectionShift {
+  A
+  B
+  C
+}
+
+// ------------------------- AUTH / USERS -------------------------
+
+model Profile {
+  id            String    @id @default(uuid()) @db.Uuid
+  full_name     String?
+  email         String?   @unique
+  password_hash String?
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  roles    UserRole[]
+  sessions Session[]
+  reports  InspectionReport[]
+
+  @@map("profiles")
+}
+
+model UserRole {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  role       AppRole
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  profile Profile @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, role])
+  @@map("user_roles")
+}
+
+model Session {
+  id         String   @id @default(uuid()) @db.Uuid
+  token_hash String   @unique @db.Uuid
+  user_id    String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  expires_at DateTime @db.Timestamptz(6)
+
+  user Profile @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("sessions")
+}
+
+// ------------------------- INSPECTION DATA -------------------------
+
+model InspectionTable {
+  id        Int      @id @default(autoincrement())
+  no_meja   Int      @unique
+  nama_meja String?
+  status    String   @default("Aktif")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  defaultParts InspectionTableDefaultPart[]
+
+  @@map("inspection_tables")
+}
+
+model Part {
+  id                 String  @id @default(uuid()) @db.Uuid
+  part_no            String  @unique
+  part_name          String  @unique
+  kategori           String?
+  customer           String?
+  is_active          Boolean @default(true)
+  standard_cycle_time Int?
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  defaultParts InspectionTableDefaultPart[]
+
+  @@map("parts")
+}
+
+model InspectionReport {
+  id               String           @id @default(uuid()) @db.Uuid
+  report_date      DateTime         @db.Date
+  shift            InspectionShift
+  no_meja          Int
+  jam_mulai        DateTime         @db.Time
+  jam_selesai      DateTime         @db.Time
+  part_no          String
+  part_name        String
+  qty_check        Int              @default(0)
+  total_ng         Int              @default(0)
+  total_ok         Int?
+  actual_cycle_time Int?
+  created_by       String?          @db.Uuid
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+  lot_no           String?
+
+  creator Profile? @relation(fields: [created_by], references: [id])
+  details InspectionDefectDetail[]
+
+  @@map("inspection_reports")
+}
+
+model InspectionDefectDetail {
+  id                   String   @id @default(uuid()) @db.Uuid
+  report_id            String   @db.Uuid
+  short_shot           Int      @default(0)
+  lipat                Int      @default(0)
+  burry                Int      @default(0)
+  bending              Int      @default(0)
+  dirty                Int      @default(0)
+  kontaminasi          Int      @default(0)
+  filter_bolong_rusak  Int      @default(0)
+  shinning             Int      @default(0)
+  silver               Int      @default(0)
+  flow_mark            Int      @default(0)
+  burn_mark            Int      @default(0)
+  sink_mark            Int      @default(0)
+  ejector_mark         Int      @default(0)
+  gas_mark             Int      @default(0)
+  crack                Int      @default(0)
+  gap                  Int      @default(0)
+  dented               Int      @default(0)
+  scratch              Int      @default(0)
+  flash                Int      @default(0)
+  double_inject        Int      @default(0)
+  bubble               Int      @default(0)
+  gate_long            Int      @default(0)
+  gate_hole            Int      @default(0)
+  over_cut             Int      @default(0)
+  under_cut            Int      @default(0)
+  black_dot            Int      @default(0)
+  deform               Int      @default(0)
+  weld_line            Int      @default(0)
+  start_up_setting_alarm Int   @default(0)
+  extra_defects        Json     @default("{}")
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+
+  report InspectionReport @relation(fields: [report_id], references: [id], onDelete: Cascade)
+
+  @@map("inspection_defect_details")
+}
+
+model InspectionTableDefaultPart {
+  id         String   @id @default(uuid()) @db.Uuid
+  no_meja    Int
+  part_no    String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  table InspectionTable @relation(fields: [no_meja], references: [no_meja], onDelete: Cascade)
+  part  Part           @relation(fields: [part_no], references: [part_no], onDelete: Cascade)
+
+  @@map("inspection_table_default_parts")
+}
+
+model DefectType {
+  id             Int      @id @default(autoincrement())
+  kode_defect    String   @unique
+  nama_defect    String
+  deskripsi      String?
+  kategori_defect String?
+  is_active      Boolean  @default(true)
+  urutan         Int?
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@map("defect_types")
+}
