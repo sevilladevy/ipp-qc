@@ -8,6 +8,9 @@ test.describe("Analytics Page", () => {
   test.beforeEach(async ({ page }) => {
     // Login before each test
     await page.goto(`${BASE_URL}/login`);
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
     await page.fill('input[type="email"]', EMAIL);
     await page.fill('input[type="password"]', PASSWORD);
     await page.click('button[type="submit"]');
@@ -20,7 +23,9 @@ test.describe("Analytics Page", () => {
 
   test("should display analytics page", async ({ page }) => {
     // Check page title - use first() for multiple matches
-    await expect(page.getByRole("heading", { name: /analytics|analitik/i }).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /analytics|analitik/i }).first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should display KPI cards", async ({ page }) => {
@@ -66,8 +71,16 @@ test.describe("Analytics Page", () => {
     await page.waitForTimeout(2000);
 
     // Check for Pareto or Trend chart - use first() for multiple matches
-    const hasPareto = await page.getByText(/pareto/i).first().isVisible({ timeout: 5000 }).catch(() => false);
-    const hasTrend = await page.getByText(/trend/i).first().isVisible({ timeout: 5000 }).catch(() => false);
+    const hasPareto = await page
+      .getByText(/pareto/i)
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+    const hasTrend = await page
+      .getByText(/trend/i)
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
 
     // At least one chart should be visible
     expect(hasPareto || hasTrend).toBeTruthy();
@@ -79,7 +92,10 @@ test.describe("Analytics Page", () => {
     const count = await selects.count();
 
     if (count > 1) {
-      await selects.nth(1).selectOption("A").catch(() => {});
+      await selects
+        .nth(1)
+        .selectOption("A")
+        .catch(() => {});
       await page.waitForTimeout(1000);
     }
 
@@ -97,7 +113,11 @@ test.describe("Analytics Page", () => {
       await page.waitForTimeout(500);
 
       // Check for table content
-      const hasTable = await page.getByText(/monitoring|comparison|per\s*meja/i).first().isVisible({ timeout: 5000 }).catch(() => false);
+      const hasTable = await page
+        .getByText(/monitoring|comparison|per\s*meja/i)
+        .first()
+        .isVisible({ timeout: 5000 })
+        .catch(() => false);
       expect(hasTable).toBeTruthy();
     }
   });

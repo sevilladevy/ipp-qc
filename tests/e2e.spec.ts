@@ -10,10 +10,14 @@ async function login(page: Page, email?: string, password?: string) {
   const passwordToUse = password || PASSWORD;
 
   await page.goto(`${BASE_URL}/login`);
-  await page.waitForLoadState("domcontentloaded");
+  // Wait for client hydration before filling controlled inputs,
+  // otherwise React re-render can clobber filled values.
+  await page.waitForLoadState("networkidle");
 
   // Find and fill email
-  const emailInput = page.locator('input[type="email"], input[name="email"], input[placeholder*="email" i]').first();
+  const emailInput = page
+    .locator('input[type="email"], input[name="email"], input[placeholder*="email" i]')
+    .first();
   await emailInput.waitFor({ state: "visible", timeout: 10000 });
   await emailInput.fill(emailToUse);
 
@@ -34,7 +38,9 @@ async function login(page: Page, email?: string, password?: string) {
 test.describe("Login", () => {
   test("should show login page correctly", async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
-    await page.waitForLoadState("domcontentloaded");
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
 
     // Check inputs exist
     await expect(page.locator('input[type="email"]').first()).toBeVisible({ timeout: 10000 });
@@ -46,12 +52,16 @@ test.describe("Login", () => {
     await login(page);
 
     // Check dashboard loads - wait for heading
-    await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should show error for invalid credentials", async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
-    await page.waitForLoadState("domcontentloaded");
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
 
     await page.locator('input[type="email"]').first().fill("wrong@example.com");
     await page.locator('input[type="password"]').first().fill("wrongpassword");
@@ -72,7 +82,9 @@ test.describe("Dashboard", () => {
     await page.waitForURL(`${BASE_URL}/`, { timeout: 30000 });
 
     // Check heading exists
-    await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible({
+      timeout: 10000,
+    });
 
     // Wait for data to load
     await page.waitForTimeout(2000);
@@ -122,7 +134,11 @@ test.describe("Input Page", () => {
     await page.waitForTimeout(1500);
 
     // Check if defect fields appear
-    const hasDefect = await page.getByText(/defect|short\s*shot|ng/i).first().isVisible({ timeout: 5000 }).catch(() => false);
+    const hasDefect = await page
+      .getByText(/defect|short\s*shot|ng/i)
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
     expect(hasDefect).toBeTruthy();
   });
 
@@ -156,7 +172,9 @@ test.describe("Master Users", () => {
 
     // Check page has content
     const bodyText = await page.textContent("body");
-    expect(bodyText?.toLowerCase().includes("pengguna") || bodyText?.toLowerCase().includes("user")).toBeTruthy();
+    expect(
+      bodyText?.toLowerCase().includes("pengguna") || bodyText?.toLowerCase().includes("user"),
+    ).toBeTruthy();
   });
 
   test("should deny access for inspector", async ({ page }) => {
@@ -172,7 +190,10 @@ test.describe("Master Users", () => {
 
     // Should see access denied or not be on users page
     const bodyText = await page.textContent("body");
-    const hasAccessDenied = bodyText?.toLowerCase().includes("akses") || bodyText?.toLowerCase().includes("ditolak") || bodyText?.toLowerCase().includes("unauthorized");
+    const hasAccessDenied =
+      bodyText?.toLowerCase().includes("akses") ||
+      bodyText?.toLowerCase().includes("ditolak") ||
+      bodyText?.toLowerCase().includes("unauthorized");
     const notOnUsersPage = !page.url().includes("/master/users");
 
     // Either access denied message is shown, or user was redirected away

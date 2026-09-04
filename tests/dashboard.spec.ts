@@ -8,6 +8,9 @@ test.describe("Dashboard", () => {
   test.beforeEach(async ({ page }) => {
     // Login before each test
     await page.goto(`${BASE_URL}/login`);
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
     await page.getByRole("textbox", { name: /email/i }).fill(EMAIL);
     await page.getByRole("textbox", { name: /password/i }).fill(PASSWORD);
     await page.getByRole("button", { name: /login|masuk|submit/i }).click();
@@ -16,7 +19,9 @@ test.describe("Dashboard", () => {
 
   test("should display dashboard page", async ({ page }) => {
     // Check page title - use first() for multiple matches
-    await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible({
+      timeout: 10000,
+    });
 
     // Check page has content
     await expect(page.getByText(/qty|yield|ng|reports/i).first()).toBeVisible({ timeout: 5000 });
@@ -39,7 +44,10 @@ test.describe("Dashboard", () => {
     const count = await selects.count();
 
     if (count > 0) {
-      await selects.first().selectOption({ index: 1 }).catch(() => {});
+      await selects
+        .first()
+        .selectOption({ index: 1 })
+        .catch(() => {});
       await page.waitForTimeout(1000);
     }
 
@@ -55,17 +63,21 @@ test.describe("Dashboard", () => {
     await page.waitForURL(BASE_URL + "/analitik", { timeout: 10000 });
 
     // Check analytics page loads - use first() for multiple matches
-    await expect(page.getByRole("heading", { name: /analitik|analytics/i }).first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("heading", { name: /analitik|analytics/i }).first()).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("should navigate to input page", async ({ page }) => {
     // Click input link
-    await page.getByRole("link", { name: /input|laporan/i }).click();
+    await page.getByRole("link", { name: "Input", exact: true }).click();
 
     // Wait for navigation
     await page.waitForURL(BASE_URL + "/input", { timeout: 10000 });
 
     // Check input page loads
-    await expect(page.getByRole("heading", { name: /input|laporan|inspeksi/i }).first()).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.getByRole("heading", { name: /input|laporan|inspeksi/i }).first(),
+    ).toBeVisible({ timeout: 5000 });
   });
 });

@@ -8,32 +8,36 @@ test.describe("Master Users Page", () => {
   test.beforeEach(async ({ page }) => {
     // Login before each test
     await page.goto(`${BASE_URL}/login`);
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
     await page.getByRole("textbox", { name: /email/i }).fill(EMAIL);
     await page.getByRole("textbox", { name: /password/i }).fill(PASSWORD);
     await page.getByRole("button", { name: /login|masuk|submit/i }).click();
     await page.waitForURL(BASE_URL + "/", { timeout: 30000 });
 
     // Navigate to master users
-    await page.getByRole("link", { name: /master|pengguna|user/i }).click();
+    await page.getByRole("link", { name: "User Dan Role", exact: true }).click();
     await page.waitForURL(BASE_URL + "/master/users", { timeout: 15000 });
   });
 
   test("should display users page", async ({ page }) => {
     // Check page title - use first() for multiple matches
-    await expect(page.getByRole("heading", { name: /pengguna|user|manajemen/i }).first()).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole("heading", { name: /pengguna|user|manajemen/i }).first(),
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test("should display user table", async ({ page }) => {
-    // Wait for table to load
-    await page.waitForTimeout(2000);
+    // Table sits below the fold on an auto-refreshing page, so assert
+    // content (not viewport visibility, which never stabilizes).
+    const table = page.locator("table").first();
+    await expect(table).toBeAttached({ timeout: 10000 });
 
-    // Check for table headers or user-related content
-    const hasUserTable = await page.getByText(/email|role|aksi/i).first().isVisible({ timeout: 5000 }).catch(() => false);
-
-    if (hasUserTable) {
-      await expect(page.getByText(/email/i).first()).toBeVisible();
-      await expect(page.getByText(/role/i).first()).toBeVisible();
-    }
+    // Check actual column headers: User, Role, Aksi
+    await expect(table).toContainText("User", { timeout: 10000 });
+    await expect(table).toContainText("Role");
+    await expect(table).toContainText("Aksi");
   });
 
   test("should display user metrics", async ({ page }) => {
@@ -41,7 +45,9 @@ test.describe("Master Users Page", () => {
     await page.waitForTimeout(2000);
 
     // Check for metric cards - use first() for multiple matches
-    await expect(page.getByText(/total|inspector|supervisor/i).first()).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/total|inspector|supervisor/i).first()).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test("should filter users by role", async ({ page }) => {
@@ -58,7 +64,9 @@ test.describe("Master Users Page", () => {
     }
 
     // Verify page still shows users
-    await expect(page.getByRole("heading", { name: /pengguna|user|manajemen/i }).first()).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /pengguna|user|manajemen/i }).first(),
+    ).toBeVisible();
   });
 
   test("should search for users", async ({ page }) => {
@@ -74,7 +82,9 @@ test.describe("Master Users Page", () => {
       await page.waitForTimeout(1000);
 
       // Verify search is working (no error)
-      await expect(page.getByRole("heading", { name: /pengguna|user|manajemen/i }).first()).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: /pengguna|user|manajemen/i }).first(),
+      ).toBeVisible();
     }
   });
 
@@ -91,7 +101,10 @@ test.describe("Master Users Page", () => {
       await page.waitForTimeout(500);
 
       // Check if modal opened
-      const hasModal = await page.getByRole("dialog").isVisible({ timeout: 3000 }).catch(() => false);
+      const hasModal = await page
+        .getByRole("dialog")
+        .isVisible({ timeout: 3000 })
+        .catch(() => false);
       if (hasModal) {
         await expect(page.getByText(/undang|email|password/i).first()).toBeVisible();
       }
@@ -106,21 +119,30 @@ test.describe("Master Users - Inspector Access", () => {
 
     // Login as inspector
     await page.goto(`${BASE_URL}/login`);
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
     await page.getByRole("textbox", { name: /email/i }).fill(INSPECTOR_EMAIL);
     await page.getByRole("textbox", { name: /password/i }).fill(INSPECTOR_PASSWORD);
     await page.getByRole("button", { name: /login|masuk|submit/i }).click();
     await page.waitForURL(BASE_URL + "/", { timeout: 30000 });
 
-    // Try to access master users
-    await page.getByRole("link", { name: /master|pengguna|user/i }).click();
+    // Try to access master users (link is hidden for non-supervisors,
+    // so fall back to direct navigation to test the route guard)
+    const masterLink = page.getByRole("link", { name: "User Dan Role", exact: true });
+    if (await masterLink.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await masterLink.click();
+    } else {
+      await page.goto(`${BASE_URL}/master/users`);
+    }
     await page.waitForTimeout(2000);
 
     // Should see access denied message
-    await expect(
-      page.getByText(/akses\s*ditolak|unauthorized|forbidden/i).first()
-    ).toBeVisible({ timeout: 5000 }).catch(() => {
-      // If no access denied, check if redirected away
-      expect(page.url()).not.toContain("/master/users");
-    });
+    await expect(page.getByText(/akses\s*ditolak|unauthorized|forbidden/i).first())
+      .toBeVisible({ timeout: 5000 })
+      .catch(() => {
+        // If no access denied, check if redirected away
+        expect(page.url()).not.toContain("/master/users");
+      });
   });
 });

@@ -7,6 +7,9 @@ const PASSWORD = process.env.E2E_PASSWORD || "admin@123";
 test.describe("Login", () => {
   test("should show login page correctly", async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
 
     // Check page loads without errors
     await expect(page.getByRole("textbox", { name: /email/i })).toBeVisible();
@@ -19,16 +22,26 @@ test.describe("Login", () => {
 
   test("should show validation error for empty fields", async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
 
-    // Submit without filling
+    // Submit without filling - native constraint validation blocks
+    // submit on the required inputs, so the form must stay put.
     await page.getByRole("button", { name: /login|masuk|submit/i }).click();
 
-    // Toast should appear - use first() for multiple matches
-    await expect(page.getByText(/email dan password wajib diisi/i).first()).toBeVisible({ timeout: 5000 });
+    await expect(page).toHaveURL(/\/login/);
+    const emailValid = await page
+      .getByRole("textbox", { name: /email/i })
+      .evaluate((el: HTMLInputElement) => el.validity.valid);
+    expect(emailValid).toBe(false);
   });
 
   test("should login successfully with valid credentials", async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
 
     // Fill credentials
     await page.getByRole("textbox", { name: /email/i }).fill(EMAIL);
@@ -41,11 +54,16 @@ test.describe("Login", () => {
     await page.waitForURL(BASE_URL + "/", { timeout: 30000 });
 
     // Check dashboard loads - use first() for multiple matches
-    await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("should show error for invalid credentials", async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
 
     // Fill with wrong credentials
     await page.getByRole("textbox", { name: /email/i }).fill("wrong@example.com");
@@ -55,7 +73,9 @@ test.describe("Login", () => {
     await page.getByRole("button", { name: /login|masuk|submit/i }).click();
 
     // Error should appear - use first() for multiple matches
-    await expect(page.getByText(/invalid login credentials/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/invalid login credentials/i).first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
 
@@ -63,6 +83,9 @@ test.describe("Authentication", () => {
   test.beforeEach(async ({ page }) => {
     // Login before each test
     await page.goto(`${BASE_URL}/login`);
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
     await page.getByRole("textbox", { name: /email/i }).fill(EMAIL);
     await page.getByRole("textbox", { name: /password/i }).fill(PASSWORD);
     await page.getByRole("button", { name: /login|masuk|submit/i }).click();
@@ -70,8 +93,11 @@ test.describe("Authentication", () => {
   });
 
   test("should redirect to login when not authenticated", async ({ page }) => {
-    // Clear cookies to logout
-    await page.context().clearCookies();
+    // Supabase auth persists in local/session storage, not cookies
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
 
     // Try to access protected page
     await page.goto(`${BASE_URL}/input`);
