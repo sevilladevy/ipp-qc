@@ -17,8 +17,23 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "chromium",
+      name: "Desktop Chrome",
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      // Smaller viewports only run the input flow (primary inspector
+      // device coverage); remaining specs stay desktop-only.
+      name: "Tablet",
+      testMatch: /input\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 768, height: 1024 },
+      },
+    },
+    {
+      name: "Mobile",
+      testMatch: /input\.spec\.ts/,
+      use: { ...devices["Pixel 7"] },
     },
   ],
   webServer: process.env.CI

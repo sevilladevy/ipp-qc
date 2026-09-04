@@ -80,7 +80,9 @@ function LoginPage() {
 
           <form onSubmit={handleSubmit} className="ipp-form">
             <div className={`ipp-field ${focused === "email" ? "ipp-focused" : ""}`}>
-              <label className="ipp-label">Email Address</label>
+              <label className="ipp-label" htmlFor="login-email">
+                Email Address
+              </label>
               <div className="ipp-input-wrap">
                 <svg
                   className="ipp-ico"
@@ -92,6 +94,7 @@ function LoginPage() {
                   <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
                 <input
+                  id="login-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -106,7 +109,9 @@ function LoginPage() {
             </div>
 
             <div className={`ipp-field ${focused === "password" ? "ipp-focused" : ""}`}>
-              <label className="ipp-label">Password</label>
+              <label className="ipp-label" htmlFor="login-password">
+                Password
+              </label>
               <div className="ipp-input-wrap">
                 <svg
                   className="ipp-ico"
@@ -119,6 +124,7 @@ function LoginPage() {
                   <path d="M7 11V7a5 5 0 0110 0v4" />
                 </svg>
                 <input
+                  id="login-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

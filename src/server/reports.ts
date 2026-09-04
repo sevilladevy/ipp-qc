@@ -270,10 +270,7 @@ export const deleteInspectionReport = createServerFn({ method: "POST" })
     }
 
     // Delete the report using admin client (bypasses RLS)
-    const { error: reportError } = await db
-      .from("inspection_reports")
-      .delete()
-      .eq("id", data.id);
+    const { error: reportError } = await db.from("inspection_reports").delete().eq("id", data.id);
 
     if (reportError) {
       const appError = toAppError(reportError);
@@ -281,10 +278,7 @@ export const deleteInspectionReport = createServerFn({ method: "POST" })
     }
 
     // Also delete related defect details
-    await db
-      .from("inspection_defect_details")
-      .delete()
-      .eq("report_id", data.id);
+    await db.from("inspection_defect_details").delete().eq("report_id", data.id);
 
     return { id: data.id };
   });

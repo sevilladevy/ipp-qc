@@ -195,11 +195,12 @@ export function useInspectionForm() {
   }, []);
 
   const updateDefect = useCallback((kodeDefect: string, value: number) => {
+    const safe = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
     setFormState((prev) => ({
       ...prev,
       defects: {
         ...prev.defects,
-        [kodeDefect]: Math.max(0, value),
+        [kodeDefect]: safe,
       },
     }));
   }, []);
@@ -210,6 +211,14 @@ export function useInspectionForm() {
     if (!formState.noMeja) return "Pilih meja inspeksi";
     if (!formState.jamMulai.trim()) return "Jam mulai wajib diisi";
     if (!formState.jamSelesai.trim()) return "Jam selesai wajib diisi";
+    if (
+      formState.jamMulai >= formState.jamSelesai &&
+      (formState.shift !== "C" || formState.jamMulai === formState.jamSelesai)
+    ) {
+      return formState.shift === "C"
+        ? "Jam selesai tidak boleh sama dengan jam mulai"
+        : "Jam selesai harus setelah jam mulai";
+    }
     if (formState.qtyCheck <= 0) return "Qty check harus > 0";
     if (defectOverflow) {
       return `Total defect (${totalDefects}) tidak boleh lebih besar dari Qty Check (${formState.qtyCheck})`;

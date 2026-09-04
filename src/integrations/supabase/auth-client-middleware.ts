@@ -43,7 +43,10 @@ export const attachAuthHeader = createMiddleware({ type: "function" }).client(as
 
   // Normal Supabase auth - try to get and refresh session
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
 
     // If no session or error, send empty headers
     if (error || !session) {

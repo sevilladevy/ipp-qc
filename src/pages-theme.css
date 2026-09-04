@@ -2354,3 +2354,54 @@
   margin-bottom: 0;
   flex: 0 0 auto;
 }
+
+/* Explicit desktop hide: the unlayered display:flex above would otherwise
+   beat Tailwind's layered lg:hidden utility (cascade layers). */
+@media (min-width: 1024px) {
+  .inspection-page .mobile-action-bar {
+    display: none;
+  }
+}
+
+/* ---- Input page: prevent iOS focus zoom on small screens ---- */
+@media (max-width: 1023px) {
+  .inspection-page .input-field,
+  .inspection-page .defect-search input,
+  .inspection-page [cmdk-input] {
+    font-size: 16px;
+  }
+}
+
+/* ---- Input page: stack hero below desktop widths ---- */
+@media (max-width: 1023px) {
+  .inspection-page .hero-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .inspection-page .hero-meta {
+    min-width: 0;
+    max-width: none;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .inspection-page .hero-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---- Input page: larger touch targets on touch devices ---- */
+@media (pointer: coarse) {
+  .inspection-page .stepper-btn {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+  .inspection-page .stepper-count {
+    min-height: 2.75rem;
+  }
+  .inspection-page .defect-toggle,
+  .inspection-page .segmented-item {
+    min-height: 44px;
+  }
+}

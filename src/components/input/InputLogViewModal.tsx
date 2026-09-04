@@ -42,6 +42,9 @@ export function InputLogViewModal({ row, onClose }: { row: InputLogRow; onClose:
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Detail Log Input"
         className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-card shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
@@ -53,7 +56,7 @@ export function InputLogViewModal({ row, onClose }: { row: InputLogRow; onClose:
           <button
             type="button"
             onClick={onClose}
-            className="rounded p-1 hover:bg-white/10"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded hover:bg-white/10"
             aria-label="Tutup detail log"
           >
             <X className="h-4 w-4" />

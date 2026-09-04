@@ -29,7 +29,10 @@ export function ConfirmModal({
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-md rounded-lg bg-card shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
@@ -40,7 +43,8 @@ export function ConfirmModal({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded p-1 text-muted-foreground hover:bg-muted"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-muted-foreground hover:bg-muted"
+            aria-label="Tutup dialog"
           >
             <X className="h-4 w-4" />
           </button>

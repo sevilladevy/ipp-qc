@@ -57,7 +57,7 @@ export function SubmitConfirmModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Konfirmasi Submit Laporan</DialogTitle>
           <DialogDescription>Periksa kembali data sebelum disimpan ke database.</DialogDescription>
@@ -96,8 +96,8 @@ export function SubmitConfirmModal({
               <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Detail Defect
               </h4>
-              <div className="overflow-hidden rounded-md border border-border/60">
-                <table className="w-full text-left">
+              <div className="overflow-x-auto rounded-md border border-border/60">
+                <table className="w-full min-w-105 text-left">
                   <thead className="bg-muted/40 text-[11px] uppercase text-muted-foreground">
                     <tr>
                       <th className="px-3 py-1.5">Kode</th>

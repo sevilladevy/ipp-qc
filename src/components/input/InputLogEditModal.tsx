@@ -39,7 +39,10 @@ export function InputLogEditModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl rounded-lg bg-card shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Edit Log Input"
+        className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-lg bg-card shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border bg-primary p-4 text-primary-foreground">
@@ -50,7 +53,7 @@ export function InputLogEditModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded p-1 hover:bg-white/10"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded hover:bg-white/10"
             aria-label="Tutup edit log"
           >
             <X className="h-4 w-4" />
@@ -85,9 +88,13 @@ export function InputLogEditModal({
                 type="number"
                 min={1}
                 value={form.no_meja}
-                onChange={(event) =>
-                  onChange({ ...form, no_meja: Math.max(0, Number(event.target.value)) })
-                }
+                onChange={(event) => {
+                  const raw = Number(event.target.value);
+                  onChange({
+                    ...form,
+                    no_meja: Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0,
+                  });
+                }}
                 className="ipt2"
                 required
               />
@@ -122,9 +129,13 @@ export function InputLogEditModal({
                 type="number"
                 min={1}
                 value={form.qty_check}
-                onChange={(event) =>
-                  onChange({ ...form, qty_check: Math.max(0, Number(event.target.value)) })
-                }
+                onChange={(event) => {
+                  const raw = Number(event.target.value);
+                  onChange({
+                    ...form,
+                    qty_check: Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0,
+                  });
+                }}
                 className="ipt2"
                 required
               />
@@ -134,9 +145,13 @@ export function InputLogEditModal({
                 type="number"
                 min={0}
                 value={form.total_ng}
-                onChange={(event) =>
-                  onChange({ ...form, total_ng: Math.max(0, Number(event.target.value)) })
-                }
+                onChange={(event) => {
+                  const raw = Number(event.target.value);
+                  onChange({
+                    ...form,
+                    total_ng: Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0,
+                  });
+                }}
                 className="ipt2"
                 required
               />

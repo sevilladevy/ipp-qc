@@ -185,6 +185,11 @@ const DefectInput = memo(function DefectInput({
           type="button"
           aria-label={`Kurangi ${defectType.nama_defect}`}
           className="stepper-btn"
+          onClick={(event) => {
+            // Keyboard activation only (detail === 0); pointer input is
+            // already handled by press-and-hold without double counting.
+            if (event.detail === 0) decrement();
+          }}
           {...minusHold}
         >
           −
@@ -221,6 +226,11 @@ const DefectInput = memo(function DefectInput({
           type="button"
           aria-label={`Tambah ${defectType.nama_defect}`}
           className="stepper-btn"
+          onClick={(event) => {
+            // Keyboard activation only (detail === 0); pointer input is
+            // already handled by press-and-hold without double counting.
+            if (event.detail === 0) increment();
+          }}
           {...plusHold}
         >
           +
@@ -495,7 +505,7 @@ function InputPage() {
         onSubmit={onSubmit}
         className="inspection-form grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]"
       >
-        <div className="space-y-6 lg:sticky lg:top-20">
+        <div className="space-y-6 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:overscroll-contain">
           <Card className="input-card">
             <div className="card-header">
               <div>
@@ -533,6 +543,7 @@ function InputPage() {
                         updateField("jamMulai", defaults[s]);
                       }}
                       className={cn("segmented-item", formState.shift === s && "active")}
+                      aria-pressed={formState.shift === s}
                     >
                       {s}
                     </button>
@@ -680,15 +691,6 @@ function InputPage() {
                   type="time"
                   value={formState.jamSelesai}
                   onChange={(e) => updateField("jamSelesai", e.target.value)}
-                  onBlur={() => {
-                    if (
-                      formState.jamMulai &&
-                      formState.jamSelesai &&
-                      formState.jamMulai >= formState.jamSelesai
-                    ) {
-                      toast.error("Jam Selesai harus setelah Jam Mulai");
-                    }
-                  }}
                   onKeyDown={(e) => handleEnter(e, qtyCheckRef)}
                   className="input-field"
                   required
@@ -705,13 +707,8 @@ function InputPage() {
                     min={0}
                     value={formState.qtyCheck}
                     onChange={(e) => {
-                      const next = Math.max(0, Number(e.target.value));
-                      updateField("qtyCheck", next);
-                    }}
-                    onBlur={() => {
-                      if (formState.qtyCheck <= 0) {
-                        toast.error("Qty Check harus lebih dari 0");
-                      }
+                      const raw = Number(e.target.value);
+                      updateField("qtyCheck", Number.isFinite(raw) ? Math.max(0, raw) : 0);
                     }}
                     onKeyDown={(e) => {
                       if (e.key !== "Enter") return;
@@ -769,6 +766,7 @@ function InputPage() {
                     type="button"
                     onClick={() => setOnlyFilled((v) => !v)}
                     className={cn("defect-toggle", onlyFilled && "active")}
+                    aria-pressed={onlyFilled}
                   >
                     {onlyFilled ? "Semua" : "Hanya > 0"}
                   </button>

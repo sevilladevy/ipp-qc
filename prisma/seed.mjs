@@ -7,8 +7,10 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 
-const DATABASE_URL = process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/ipp_quality";
-const SEED_DIR = process.env.SEED_DATA_DIR ?? "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ipp-migration";
+const DATABASE_URL =
+  process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/ipp_quality";
+const SEED_DIR =
+  process.env.SEED_DATA_DIR ?? "C:\\Users\\user\\AppData\\Local\\Temp\\opencode\\ipp-migration";
 
 // Single default password applied to every migrated account. Anyone logging in
 // after the migration uses this password until an admin resets it via the app.
@@ -30,7 +32,9 @@ function toDate(v) {
 
 function toTime(v) {
   // "07:00:00" -> Date
-  const [h, m, s] = String(v ?? "00:00:00").split(":").map(Number);
+  const [h, m, s] = String(v ?? "00:00:00")
+    .split(":")
+    .map(Number);
   const d = new Date(1970, 0, 1, h || 0, m || 0, s || 0);
   return d;
 }
@@ -144,7 +148,8 @@ async function main() {
   const roleMap = new Map();
   for (const r of roles) {
     const role = r.role === "operator" || r.role === "inspector" ? "inspector" : "supervisor";
-    if (!roleMap.has(r.user_id)) roleMap.set(r.user_id, role === "supervisor" ? "supervisor" : "inspector");
+    if (!roleMap.has(r.user_id))
+      roleMap.set(r.user_id, role === "supervisor" ? "supervisor" : "inspector");
   }
   for (const [userId, role] of roleMap.entries()) {
     await prisma.userRole.create({
