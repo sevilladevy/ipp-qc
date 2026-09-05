@@ -269,6 +269,19 @@ export const deleteInspectionReport = createServerFn({ method: "POST" })
       throw new Response("Anda tidak berhak menghapus laporan ini", { status: 403 });
     }
 
+    // Delete child rows first so no orphan defect details can remain,
+    // whether or not the FK cascade is present. Errors are surfaced
+    // instead of silently ignored.
+    const { error: detailError } = await db
+      .from("inspection_defect_details")
+      .delete()
+      .eq("report_id", data.id);
+
+    if (detailError) {
+      const appError = toAppError(detailError);
+      throw new Response(appError.message, { status: appError.status });
+    }
+
     // Delete the report using admin client (bypasses RLS)
     const { error: reportError } = await db.from("inspection_reports").delete().eq("id", data.id);
 
@@ -276,9 +289,6 @@ export const deleteInspectionReport = createServerFn({ method: "POST" })
       const appError = toAppError(reportError);
       throw new Response(appError.message, { status: appError.status });
     }
-
-    // Also delete related defect details
-    await db.from("inspection_defect_details").delete().eq("report_id", data.id);
 
     return { id: data.id };
   });
