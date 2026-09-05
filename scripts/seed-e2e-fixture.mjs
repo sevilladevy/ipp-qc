@@ -115,6 +115,28 @@ const config = {
 };
 
 const run = async () => {
+  // Remove stale fixture rows from previous runs so counts stay
+  // deterministic (fixture parts are E2E- prefixed and safe to clear).
+  const { data: staleReports, error: staleError } = await supabase
+    .from("inspection_reports")
+    .select("id")
+    .in("part_no", partNos);
+  if (staleError) throw staleError;
+  const staleIds = (staleReports ?? []).map((row) => row.id);
+  if (staleIds.length > 0) {
+    const { error: staleDetailsError } = await supabase
+      .from("inspection_defect_details")
+      .delete()
+      .in("report_id", staleIds);
+    if (staleDetailsError) throw staleDetailsError;
+    const { error: staleReportsError } = await supabase
+      .from("inspection_reports")
+      .delete()
+      .in("id", staleIds);
+    if (staleReportsError) throw staleReportsError;
+    console.log(`Cleaned ${staleIds.length} stale fixture reports`);
+  }
+
   const { error: cleanupDetailsError } = await supabase
     .from("inspection_defect_details")
     .delete()

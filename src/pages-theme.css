@@ -1476,6 +1476,71 @@
     color: #cbd5e1;
   }
 
+  .ipp-input.has-toggle {
+    padding-right: 44px;
+  }
+
+  .ipp-eye {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition:
+      color 0.2s,
+      background-color 0.2s;
+  }
+
+  .ipp-eye:hover {
+    color: #0ea5e9;
+    background: rgb(14 165 233 / 0.08);
+  }
+
+  .ipp-focused .ipp-eye {
+    color: #0ea5e9;
+  }
+
+  .ipp-eye-ico {
+    width: 18px;
+    height: 18px;
+  }
+
+  .ipp-remember {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: #475569;
+  }
+
+  .ipp-checkbox {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    accent-color: #0ea5e9;
+    cursor: pointer;
+  }
+
+  @media (max-width: 1023px) {
+    .ipp-input {
+      font-size: 16px;
+    }
+  }
+
   .ipp-input:focus {
     background: #f0f9ff;
     border-color: #38bdf8;
@@ -2058,7 +2123,9 @@
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .inspection-page .segmented-item:hover {

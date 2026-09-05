@@ -108,9 +108,11 @@ async function handleRequestError(error: unknown): Promise<never> {
 
   // Handle 401 - redirect to login
   if (typeof window !== "undefined") {
-    // Clear all local auth data
-    for (const key of Object.keys(localStorage)) {
-      if (key.startsWith("sb-")) localStorage.removeItem(key);
+    // Clear all local auth data (both storages for remember-me support)
+    for (const storage of [localStorage, sessionStorage]) {
+      for (const key of Object.keys(storage)) {
+        if (key.startsWith("sb-")) storage.removeItem(key);
+      }
     }
     sessionStorage.removeItem("demo_session");
     // Sign out is fire-and-forget (can fail if token already invalid)

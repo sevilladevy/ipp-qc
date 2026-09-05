@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { SESSION_ONLY_KEY, resetSupabaseClient, supabase } from "@/integrations/supabase/client";
 import {
   checkRateLimit,
   clearRateLimit,
@@ -19,6 +19,74 @@ const DEMO_USERS: Record<string, { password: string; role: AppRole; name: string
   "inspector@demo.com": { password: "demo123", role: "inspector", name: "Demo Inspector" },
 };
 
+const REMEMBERED_EMAIL_KEY = "ipp_remembered_email";
+
+export function getRememberedEmail(): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem(REMEMBERED_EMAIL_KEY) ?? "";
+}
+
+function setRememberedEmail(email: string, remember: boolean) {
+  if (typeof window === "undefined") return;
+  if (remember && email) {
+    window.localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+  } else {
+    window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+  }
+}
+
+export function isSessionOnly(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.sessionStorage.getItem(SESSION_ONLY_KEY) === "1";
+}
+
+export function setSessionOnlyMode(on: boolean) {
+  if (typeof window === "undefined") return;
+  if (on) {
+    window.sessionStorage.setItem(SESSION_ONLY_KEY, "1");
+  } else {
+    window.sessionStorage.removeItem(SESSION_ONLY_KEY);
+  }
+}
+
+function supabaseTokenKey(source: Storage): string | null {
+  for (let i = 0; i < source.length; i++) {
+    const key = source.key(i);
+    if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) return key;
+  }
+  return null;
+}
+
+/** Move the persisted session so it matches the requested persistence,
+ * then reload so the Supabase client boots with the right storage. */
+function migrateAuthStorage(toSessionOnly: boolean) {
+  if (typeof window === "undefined") return;
+  const from = toSessionOnly ? window.localStorage : window.sessionStorage;
+  const to = toSessionOnly ? window.sessionStorage : window.localStorage;
+  const tokenKey = supabaseTokenKey(from);
+  if (tokenKey) {
+    const value = from.getItem(tokenKey);
+    if (value) to.setItem(tokenKey, value);
+    from.removeItem(tokenKey);
+  }
+  if (toSessionOnly) {
+    window.sessionStorage.setItem(SESSION_ONLY_KEY, "1");
+  } else {
+    window.sessionStorage.removeItem(SESSION_ONLY_KEY);
+  }
+  window.location.reload();
+}
+
+function clearPersistedAuth() {
+  if (typeof window === "undefined") return;
+  for (const storage of [window.localStorage, window.sessionStorage]) {
+    for (const key of Object.keys(storage)) {
+      if (key.startsWith("sb-")) storage.removeItem(key);
+    }
+  }
+  window.sessionStorage.removeItem("demo_session");
+}
+
 export function isPrivilegedUser(role: AppRole | null, email: string | null | undefined): boolean {
   return (
     role === "supervisor" ||
@@ -31,9 +99,15 @@ interface AuthContextValue {
   session: Session | null;
   role: AppRole | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signIn: (
+    email: string,
+    password: string,
+    remember?: boolean,
+  ) => Promise<{ error: string | null; reloaded?: boolean }>;
   signOut: () => Promise<void>;
   isSupervisor: boolean;
+  /** Switch auth persistence without a page reload (login page toggle). */
+  switchAuthStorage: (sessionOnly: boolean) => void;
   demoMode?: boolean;
   rateLimitInfo?: {
     isLimited: boolean;
@@ -65,6 +139,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authReady, setAuthReady] = useState(false);
   const [roleLoading, setRoleLoading] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
+  const [storageMode, setStorageMode] = useState<"local" | "session">(() =>
+    isSessionOnly() ? "session" : "local",
+  );
+
+  // Reboot auth on the newly selected storage without a page reload.
+  // Only used pre-login (no active session to migrate).
+  const switchAuthStorage = useCallback((sessionOnly: boolean) => {
+    setSessionOnlyMode(sessionOnly);
+    resetSupabaseClient();
+    setSession(null);
+    setUser(null);
+    setRole(null);
+    setAuthReady(false);
+    setStorageMode(sessionOnly ? "session" : "local");
+  }, []);
   const loading = !authReady || roleLoading;
 
   // Check for demo session on mount
@@ -107,10 +196,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (event === "SIGNED_OUT" || event === "USER_UPDATED") {
-        // Clear all local storage keys starting with 'sb-'
-        for (const key of Object.keys(localStorage)) {
-          if (key.startsWith("sb-")) localStorage.removeItem(key);
-        }
+        // Clear persisted auth from both storages (remember-me aware)
+        clearPersistedAuth();
       }
 
       if (event === "SIGNED_OUT" && !newSession) {
@@ -138,9 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch((error) => {
         console.error("Failed to load auth session", error);
-        for (const key of Object.keys(localStorage)) {
-          if (key.startsWith("sb-")) localStorage.removeItem(key);
-        }
+        clearPersistedAuth();
         setSession(null);
         setUser(null);
         setRole(null);
@@ -153,7 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       active = false;
       sub.subscription.unsubscribe();
     };
-  }, [demoMode]);
+  }, [demoMode, storageMode]);
 
   useEffect(() => {
     if (!authReady || demoMode) return;
@@ -200,7 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [rateLimitInfo, setRateLimitInfo] = useState<AuthContextValue["rateLimitInfo"]>();
 
-  async function signIn(email: string, password: string) {
+  async function signIn(email: string, password: string, remember = true) {
     // Check rate limit before attempting login
     try {
       checkRateLimit(email);
@@ -217,6 +302,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearRateLimit(email);
       setRateLimitInfo(undefined);
       setDemoMode(true);
+
+      setRememberedEmail(email.toLowerCase(), remember);
 
       const mockUser = createMockUser(email.toLowerCase(), demoUser.role);
       setUser(mockUser);
@@ -255,10 +342,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Ensure a leftover demo session never shadows the real session
     sessionStorage.removeItem("demo_session");
+    setRememberedEmail(email.toLowerCase(), remember);
+
+    // Reconcile session persistence with the remember choice. A reload
+    // is required so the Supabase client boots with the right storage.
+    if (remember === isSessionOnly()) {
+      migrateAuthStorage(!remember);
+      return { error: null, reloaded: true };
+    }
     return { error: null };
   }
 
   async function signOut() {
+    // A fresh login starts with default (persistent) storage
+    switchAuthStorage(false);
     // Clear demo mode
     if (demoMode) {
       sessionStorage.removeItem("demo_session");
@@ -282,6 +379,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Sign out failed", error);
     } finally {
       // Always clear local state regardless of server response
+      clearPersistedAuth();
       setSession(null);
       setUser(null);
       setRole(null);
@@ -299,6 +397,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signOut,
         isSupervisor: role === "supervisor",
+        switchAuthStorage,
         demoMode,
         rateLimitInfo,
       }}

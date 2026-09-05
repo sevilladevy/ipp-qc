@@ -17,9 +17,15 @@ function createSupabaseClient() {
       ? async <T>(_name: string, _acquireTimeout: number, fn: () => PromiseLike<T>) => await fn()
       : undefined;
 
+  // "Remember me" off = session-only persistence. The flag lives in
+  // sessionStorage so it naturally dies with the tab.
+  const sessionOnly =
+    typeof window !== "undefined" && sessionStorage.getItem(SESSION_ONLY_KEY) === "1";
+
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
-      storage: typeof window !== "undefined" ? localStorage : undefined,
+      storage:
+        typeof window === "undefined" ? undefined : sessionOnly ? sessionStorage : localStorage,
       persistSession: true,
       autoRefreshToken: true,
       lock: devNoopLock,
@@ -27,7 +33,16 @@ function createSupabaseClient() {
   });
 }
 
+export const SESSION_ONLY_KEY = "ipp_session_only";
+
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
+
+/** Drop the cached client so the next access boots a fresh one.
+ * Needed when the auth storage mode changes (remember-me toggle);
+ * the surrounding AuthProvider resubscribes on the new instance. */
+export function resetSupabaseClient() {
+  _supabase = undefined;
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
