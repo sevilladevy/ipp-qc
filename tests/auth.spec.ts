@@ -59,6 +59,94 @@ test.describe("Login", () => {
     });
   });
 
+  test("should toggle password visibility", async ({ page }) => {
+    await page.goto(`${BASE_URL}/login`);
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
+
+    const passwordInput = page.getByRole("textbox", { name: /password/i });
+    await passwordInput.fill("secret123");
+    await expect(passwordInput).toHaveAttribute("type", "password");
+
+    const toggle = page.getByRole("button", { name: /tampilkan password/i });
+    await toggle.click();
+    await expect(passwordInput).toHaveAttribute("type", "text");
+    await expect(passwordInput).toHaveValue("secret123");
+    await expect(page.getByRole("button", { name: /sembunyikan password/i })).toBeVisible();
+
+    await page.getByRole("button", { name: /sembunyikan password/i }).click();
+    await expect(passwordInput).toHaveAttribute("type", "password");
+  });
+
+  test("remember me off keeps the session out of localStorage", async ({ page }) => {
+    await page.goto(`${BASE_URL}/login`);
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
+
+    await page.getByRole("textbox", { name: /email/i }).fill(EMAIL);
+    await page.getByRole("textbox", { name: /password/i }).fill(PASSWORD);
+    // Unchecking reboots auth on session storage with no page reload.
+    await page.getByRole("checkbox", { name: /ingat saya/i }).uncheck();
+    await expect(page.getByRole("checkbox", { name: /ingat saya/i })).not.toBeChecked();
+    await page.getByRole("button", { name: /login|masuk|submit/i }).click();
+    await page.waitForURL(BASE_URL + "/", { timeout: 30000 });
+
+    const stores = await page.evaluate(() => ({
+      local: Object.keys(localStorage).filter((k) => k.startsWith("sb-")),
+      session: Object.keys(sessionStorage).filter((k) => k.startsWith("sb-")),
+    }));
+    expect(stores.local).toHaveLength(0);
+    expect(stores.session.length).toBeGreaterThan(0);
+  });
+
+  test("remember me on persists the session in localStorage", async ({ page }) => {
+    await page.goto(`${BASE_URL}/login`);
+    // Wait for client hydration before filling controlled inputs,
+    // otherwise React re-render can clobber filled values.
+    await page.waitForLoadState("networkidle");
+
+    await page.getByRole("textbox", { name: /email/i }).fill(EMAIL);
+    await page.getByRole("textbox", { name: /password/i }).fill(PASSWORD);
+    await expect(page.getByRole("checkbox", { name: /ingat saya/i })).toBeChecked();
+    await page.getByRole("button", { name: /login|masuk|submit/i }).click();
+    await page.waitForURL(BASE_URL + "/", { timeout: 30000 });
+
+    const localKeys = await page.evaluate(() =>
+      Object.keys(localStorage).filter((k) => k.startsWith("sb-")),
+    );
+    expect(localKeys.length).toBeGreaterThan(0);
+  });
+
+  test("remembered email prefills only when remember me is on", async ({ page }) => {
+    async function loginAndOut(remember: boolean) {
+      await page.goto(`${BASE_URL}/login`);
+      // Wait for client hydration before filling controlled inputs,
+      // otherwise React re-render can clobber filled values.
+      await page.waitForLoadState("networkidle");
+      await page.getByRole("textbox", { name: /email/i }).fill(EMAIL);
+      await page.getByRole("textbox", { name: /password/i }).fill(PASSWORD);
+      if (remember) {
+        await expect(page.getByRole("checkbox", { name: /ingat saya/i })).toBeChecked();
+      } else {
+        // Unchecking reboots auth on session storage with no page reload.
+        await page.getByRole("checkbox", { name: /ingat saya/i }).uncheck();
+        await expect(page.getByRole("checkbox", { name: /ingat saya/i })).not.toBeChecked();
+      }
+      await page.getByRole("button", { name: /login|masuk|submit/i }).click();
+      await page.waitForURL(BASE_URL + "/", { timeout: 30000 });
+      await page.getByRole("button", { name: /logout/i }).click();
+      await page.getByRole("textbox", { name: /email/i }).waitFor({ timeout: 10000 });
+    }
+
+    await loginAndOut(true);
+    await expect(page.getByRole("textbox", { name: /email/i })).toHaveValue(EMAIL);
+
+    await loginAndOut(false);
+    await expect(page.getByRole("textbox", { name: /email/i })).toHaveValue("");
+  });
+
   test("should show error for invalid credentials", async ({ page }) => {
     await page.goto(`${BASE_URL}/login`);
     // Wait for client hydration before filling controlled inputs,
