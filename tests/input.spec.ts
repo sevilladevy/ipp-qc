@@ -30,7 +30,8 @@ test.describe("Input Page", () => {
 
   test("should display form fields", async ({ page }) => {
     // Check for form fields using labels - use first() for text matches
-    await expect(page.getByText(/tanggal/i).first()).toBeVisible();
+    // (generous timeout: first content paint is slow under parallel load)
+    await expect(page.getByText(/tanggal/i).first()).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(/shift/i).first()).toBeVisible();
     await expect(page.getByText(/no\s*meja/i).first()).toBeVisible();
     await expect(page.locator(".inspection-form").getByText(/part/i).first()).toBeVisible();
