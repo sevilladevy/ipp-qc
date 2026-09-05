@@ -17,6 +17,7 @@ import {
   EyeOff,
   RefreshCw,
   Search,
+  X,
   Users,
   UserCheck,
   Clock3,
@@ -105,6 +106,10 @@ function UserManagementPage() {
     () => filteredRows.slice((page - 1) * pageSize, page * pageSize),
     [filteredRows, page, pageSize],
   );
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
   const supervisorCount = rows.filter((u) => u.role === "supervisor").length;
   const inspectorCount = rows.filter((u) => u.role === "inspector").length;
   const activeCount = rows.filter((u) => Boolean(u.last_sign_in_at)).length;
@@ -205,9 +210,10 @@ function UserManagementPage() {
                 setPage(1);
               }}
               placeholder="Cari nama atau email..."
+              aria-label="Cari user"
             />
           </div>
-          <div className="role-tabs" aria-label="Filter role">
+          <div className="role-tabs" role="group" aria-label="Filter role">
             {(["all", "inspector", "supervisor"] as const).map((role) => (
               <button
                 key={role}
@@ -216,6 +222,7 @@ function UserManagementPage() {
                   setRoleFilter(role);
                   setPage(1);
                 }}
+                aria-pressed={roleFilter === role}
                 className={cn(roleFilter === role && "active")}
               >
                 {role === "all" ? "Semua" : role === "inspector" ? "Inspector" : "Supervisor"}
@@ -400,9 +407,11 @@ function UserManagementPage() {
           loading={confirmAction.action === "promote" ? promoteMut.isPending : deleteMut.isPending}
           onConfirm={() => {
             const { action, userId } = confirmAction;
-            if (action === "promote") promoteMut.mutate(userId);
-            else deleteMut.mutate(userId);
-            setConfirmAction(null);
+            const done = {
+              onSuccess: () => setConfirmAction(null),
+            };
+            if (action === "promote") promoteMut.mutate(userId, done);
+            else deleteMut.mutate(userId, done);
           }}
           onCancel={() => setConfirmAction(null)}
         />
@@ -494,7 +503,7 @@ function InviteModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState(generateTempPassword());
   const [role, setRole] = useState<"inspector" | "supervisor">("inspector");
-  const [showPw, setShowPw] = useState(true);
+  const [showPw, setShowPw] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const summary = useMemo(
@@ -517,7 +526,12 @@ function InviteModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
     setSubmitting(true);
 
     try {
-      await inviteUser({ data: { email, password, fullName, role } });
+      const cleanEmail = email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        toast.error("Format email tidak valid");
+        return;
+      }
+      await inviteUser({ data: { email: cleanEmail, password, fullName, role } });
       toast.success("Akun berhasil dibuat. Bagikan password sementara ke inspector.");
       onCreated();
       onClose();
@@ -530,12 +544,27 @@ function InviteModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-md rounded-lg border border-border bg-card shadow-xl">
-        <div className="border-b border-border px-5 py-3">
-          <h3 className="text-base font-bold">Undang Inspector Baru</h3>
-          <p className="text-xs text-muted-foreground">
-            Akun langsung aktif. Bagikan password sementara secara manual.
-          </p>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Undang Inspector Baru"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border border-border bg-card shadow-xl"
+      >
+        <div className="flex items-center justify-between gap-2 border-b border-border px-5 py-3">
+          <div>
+            <h3 className="text-base font-bold">Undang Inspector Baru</h3>
+            <p className="text-xs text-muted-foreground">
+              Akun langsung aktif. Bagikan password sementara secara manual.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup dialog"
+            className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-3 px-5 py-4">
           <Field label="Nama Lengkap">
@@ -571,7 +600,9 @@ function InviteModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
                 <button
                   type="button"
                   onClick={() => setShowPw((s) => !s)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPw ? "Sembunyikan password" : "Tampilkan password"}
+                  aria-pressed={showPw}
+                  className="absolute right-2 top-1/2 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
                 >
                   {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -581,6 +612,7 @@ function InviteModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
                 onClick={() => setPassword(generateTempPassword())}
                 className="rounded-md border border-border bg-card px-2 text-xs font-medium hover:bg-muted"
                 title="Generate ulang"
+                aria-label="Generate ulang password sementara"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
               </button>
@@ -599,9 +631,23 @@ function InviteModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
 
           <button
             type="button"
-            onClick={() => {
-              navigator.clipboard.writeText(summary);
-              toast.success("Detail akun disalin");
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(summary);
+                toast.success("Detail akun disalin");
+              } catch {
+                const ta = document.createElement("textarea");
+                ta.value = summary;
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                  document.execCommand("copy");
+                  toast.success("Detail akun disalin");
+                } catch {
+                  toast.error("Gagal menyalin, salin manual dari ringkasan");
+                }
+                document.body.removeChild(ta);
+              }
             }}
             className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-xs font-medium hover:bg-muted"
           >

@@ -1519,6 +1519,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    min-height: 44px;
     cursor: pointer;
     user-select: none;
     font-size: 13px;
@@ -2458,6 +2459,20 @@
   }
 }
 
+/* ---- Global: prevent iOS focus zoom on form controls ---- */
+@media (max-width: 1023px) {
+  .input,
+  .ipt,
+  .ipt2,
+  .ipt3,
+  .ipt4,
+  .ipt5,
+  .ipt6,
+  .ipt7 {
+    font-size: 16px;
+  }
+}
+
 /* ---- Input page: larger touch targets on touch devices ---- */
 @media (pointer: coarse) {
   .inspection-page .stepper-btn {
@@ -2470,5 +2485,12 @@
   .inspection-page .defect-toggle,
   .inspection-page .segmented-item {
     min-height: 44px;
+  }
+  .rich-search {
+    font-size: 16px;
+  }
+  .tag {
+    min-height: 44px;
+    touch-action: manipulation;
   }
 }

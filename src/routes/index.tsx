@@ -4,6 +4,15 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
+  CartesianGrid,
+  ResponsiveContainer,
+  Scatter,
+  ScatterChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
   Activity,
   AlertOctagon,
   CheckCircle2,
@@ -68,6 +77,7 @@ const InspectorPerformanceSection = memo(function InspectorPerformanceSection({
         compact
         searchable
         exportable
+        exportFilename="dashboard-inspector"
         pageSize={10}
         className="!rounded-xl !border-sky-100/80"
       />
@@ -247,7 +257,7 @@ function Dashboard() {
 
   const criticalAlerts = useMemo(() => {
     const lowYield = [...filteredRows]
-      .filter((row) => (row.qty_check > 0 ? (row.total_ok ?? 0) / row.qty_check : 0) < 0.95)
+      .filter((row) => row.qty_check > 0 && (row.total_ok ?? 0) / row.qty_check < 0.95)
       .sort(
         (a, b) =>
           (a.qty_check > 0 ? (a.total_ok ?? 0) / a.qty_check : 0) -
@@ -544,6 +554,7 @@ function Dashboard() {
         <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <select
             className="ipt"
+            aria-label="Filter meja"
             value={filters.meja}
             onChange={(event) =>
               setFilters((prev) => ({
@@ -561,6 +572,7 @@ function Dashboard() {
           </select>
           <select
             className="ipt"
+            aria-label="Filter shift"
             value={filters.shift}
             onChange={(event) => setFilters((prev) => ({ ...prev, shift: event.target.value }))}
           >
@@ -571,6 +583,7 @@ function Dashboard() {
           </select>
           <select
             className="ipt"
+            aria-label="Filter inspector"
             value={filters.inspectorId}
             onChange={(event) =>
               setFilters((prev) => ({ ...prev, inspectorId: event.target.value }))
@@ -586,6 +599,7 @@ function Dashboard() {
           <input
             className="ipt"
             placeholder="Filter part"
+            aria-label="Filter part"
             value={filters.part}
             list="part-options"
             onChange={(event) => setFilters((prev) => ({ ...prev, part: event.target.value }))}
@@ -799,8 +813,8 @@ function Dashboard() {
               ]}
               series={[
                 { key: "qty_check", color: CHART_COLORS[1] },
-                { key: "passRate", color: "var(--color-primary)", type: "line" },
-                { key: "ngRate", color: "var(--color-destructive)", type: "line" },
+                { key: "passRate", color: "var(--color-primary)", type: "line", axis: "right" },
+                { key: "ngRate", color: "var(--color-destructive)", type: "line", axis: "right" },
               ]}
               kind="composed"
               height={240}
@@ -825,7 +839,7 @@ function Dashboard() {
               ]}
               series={[
                 { key: "total", color: CHART_COLORS[0] },
-                { key: "cumPct", color: "var(--color-primary)", type: "line" },
+                { key: "cumPct", color: "var(--color-primary)", type: "line", axis: "right" },
               ]}
               kind="composed"
               height={240}
@@ -846,6 +860,7 @@ function Dashboard() {
           compact
           searchable
           exportable
+          exportFilename="dashboard-meja-risk"
           pageSize={10}
           className="!rounded-xl !border-sky-100/80"
         />
@@ -858,6 +873,7 @@ function Dashboard() {
           compact
           searchable
           exportable
+          exportFilename="dashboard-part-loss"
           pageSize={10}
           className="!rounded-xl !border-sky-100/80"
         />
@@ -880,15 +896,29 @@ function Dashboard() {
               NG &gt; 10
             </div>
           </div>
-          <ChartWithValues
-            data={scatterData as unknown as Record<string, unknown>[]}
-            xKey="qty_check"
-            categories={[{ key: "ng", label: "NG" }]}
-            series={[{ key: "ng", color: "var(--color-chart-2)" }]}
-            kind="bar"
-            height={220}
-            showValues={false}
-          />
+          <ResponsiveContainer width="100%" height={220}>
+            <ScatterChart margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+              <XAxis
+                type="number"
+                dataKey="qty_check"
+                name="Qty Check"
+                tick={{ fontSize: 10 }}
+                tickLine={false}
+                axisLine={{ stroke: "var(--color-border)" }}
+              />
+              <YAxis
+                type="number"
+                dataKey="ng"
+                name="NG"
+                tick={{ fontSize: 10 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+              <Scatter data={scatterData} fill="var(--color-chart-2)" />
+            </ScatterChart>
+          </ResponsiveContainer>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge, EmptyState } from "@/components/ui-kit";
 import { DataTablePagination, DataTableShell } from "@/components/data-table";
 import { useParts } from "@/hooks/useMasterData";
@@ -44,7 +44,7 @@ function MasterPart() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Part | null>(null);
   const [open, setOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Part | null>(null);
   const rows = useMemo(
     () =>
       [...(parts ?? [])].sort((left, right) => left.part_name.localeCompare(right.part_name, "id")),
@@ -65,7 +65,15 @@ function MasterPart() {
     [filteredRows, page, pageSize],
   );
 
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
   async function save(form: PartForm) {
+    if (!form.part_no.trim() || !form.part_name.trim()) {
+      toast.error("Part No dan Nama Part wajib diisi");
+      return;
+    }
     const payloadInsert: TablesInsert<"parts"> = {
       part_no: form.part_no.trim(),
       part_name: form.part_name.trim(),
@@ -84,7 +92,13 @@ function MasterPart() {
     const { error } = editing
       ? await supabase.from("parts").update(payloadUpdate).eq("id", editing.id)
       : await supabase.from("parts").insert(payloadInsert);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (error.code === "23505") {
+        toast.error(`Part No ${form.part_no.trim()} sudah terdaftar`);
+        return;
+      }
+      return toast.error(error.message);
+    }
     toast.success("Part tersimpan");
     qc.invalidateQueries({ queryKey: ["parts"] });
     setOpen(false);
@@ -106,6 +120,7 @@ function MasterPart() {
       columns: [
         { key: "part_no", label: "Part No" },
         { key: "part_name", label: "Nama Part" },
+        { key: "customer", label: "Customer" },
         { key: "kategori", label: "Kategori" },
         {
           key: "standard_cycle_time",
@@ -132,6 +147,7 @@ function MasterPart() {
       columns: [
         { key: "part_no", label: "Part No" },
         { key: "part_name", label: "Nama Part" },
+        { key: "customer", label: "Customer" },
         { key: "kategori", label: "Kategori" },
         {
           key: "standard_cycle_time",
@@ -211,6 +227,7 @@ function MasterPart() {
                 setPage(1);
               }}
               placeholder="Cari part_no atau nama part..."
+              aria-label="Cari part"
               className="w-full rounded-md border border-input bg-card py-2 pl-8 pr-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
             />
           </label>
@@ -232,7 +249,25 @@ function MasterPart() {
           </>
         }
       >
-        {!filteredRows.length ? (
+        {partsQuery.isLoading ? (
+          <div className="p-6">
+            <EmptyState title="Memuat part..." />
+          </div>
+        ) : partsQuery.isError ? (
+          <div className="p-6">
+            <EmptyState
+              title="Gagal memuat part"
+              description={
+                partsQuery.error instanceof Error ? partsQuery.error.message : "Terjadi kesalahan."
+              }
+            />
+            <div className="mt-3 flex justify-center">
+              <button type="button" onClick={() => partsQuery.refetch()} className="btn2">
+                Coba lagi
+              </button>
+            </div>
+          </div>
+        ) : !filteredRows.length ? (
           <div className="p-6">
             <EmptyState title="Data part tidak ditemukan" />
           </div>
@@ -244,6 +279,7 @@ function MasterPart() {
                   <tr>
                     <th className="px-4 py-3 text-left">Part No</th>
                     <th className="px-4 py-3 text-left">Nama Part</th>
+                    <th className="hidden px-4 py-3 text-left lg:table-cell">Customer</th>
                     <th className="hidden px-4 py-3 text-left md:table-cell">Kategori</th>
                     <th className="hidden px-4 py-3 text-right md:table-cell">Cycle Time (dtk)</th>
                     <th className="hidden px-4 py-3 text-center md:table-cell">Status</th>
@@ -258,6 +294,9 @@ function MasterPart() {
                       </td>
                       <td data-label="Nama Part" className="px-4 py-2.5 font-medium">
                         {p.part_name}
+                      </td>
+                      <td data-label="Customer" className="hidden px-4 py-2.5 lg:table-cell">
+                        {p.customer || "-"}
                       </td>
                       <td data-label="Kategori" className="hidden px-4 py-2.5 md:table-cell">
                         <Badge variant="outline">{p.kategori || "-"}</Badge>
@@ -283,12 +322,16 @@ function MasterPart() {
                               setEditing(p);
                               setOpen(true);
                             }}
+                            aria-label={`Edit part ${p.part_no}`}
+                            title={`Edit part ${p.part_no}`}
                             className="rounded p-1.5 text-info hover:bg-info/10 min-h-[44px] min-w-[44px]"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
-                            onClick={() => setConfirmDelete(p.id)}
+                            onClick={() => setConfirmDelete(p)}
+                            aria-label={`Hapus part ${p.part_no}`}
+                            title={`Hapus part ${p.part_no}`}
                             className="rounded p-1.5 text-destructive hover:bg-destructive/10 min-h-[44px] min-w-[44px]"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -330,9 +373,9 @@ function MasterPart() {
         <ConfirmModal
           open={true}
           title="Hapus Part"
-          message="Hapus part ini?"
+          message={`Hapus part ${confirmDelete.part_no} - ${confirmDelete.part_name}?`}
           onConfirm={() => {
-            del(confirmDelete);
+            del(confirmDelete.id);
             setConfirmDelete(null);
           }}
           onCancel={() => setConfirmDelete(null)}
@@ -365,12 +408,22 @@ function PartModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-lg bg-card shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label={initial ? "Edit Part" : "Tambah Part"}
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border bg-primary p-4 text-primary-foreground">
           <h3 className="font-semibold">{initial ? "Edit Part" : "Tambah Part"}</h3>
-          <button onClick={onClose}>✕</button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup dialog"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded hover:bg-white/10"
+          >
+            ✕
+          </button>
         </div>
         <form
           onSubmit={(e) => {
@@ -383,6 +436,8 @@ function PartModal({
             <input
               required
               value={form.part_no}
+              readOnly={!!initial}
+              title={initial ? "Part No tidak dapat diubah" : undefined}
               onChange={(e) => setForm({ ...form, part_no: e.target.value })}
               className="ipt5"
               placeholder="Contoh: IPP-001"

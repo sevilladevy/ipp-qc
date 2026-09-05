@@ -25,7 +25,8 @@ export function buildPartPareto(rows: EnrichedReport[]) {
 
 export function buildYieldBox(rows: EnrichedReport[]) {
   const sorted = [...rows]
-    .map((row) => Number((((row.total_ok ?? 0) / (row.qty_check || 1)) * 100).toFixed(2)))
+    .filter((row) => row.qty_check > 0)
+    .map((row) => Number((((row.total_ok ?? 0) / row.qty_check) * 100).toFixed(2)))
     .sort((a, b) => a - b);
   if (!sorted.length) {
     return [

@@ -51,7 +51,15 @@ function MasterLayout() {
     }
   }, [location.pathname, isSupervisor, router]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex min-h-64 items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!isSupervisor) {
     return (
@@ -66,34 +74,42 @@ function MasterLayout() {
     );
   }
 
+  // Hub cards only on the exact /master route; child pages render
+  // their own headers so mobile users don't scroll past dead chrome.
+  const isHub = location.pathname === "/master";
+
   return (
     <AppLayout>
-      <PageHeader
-        title="Master Data"
-        description="Pusat pengelolaan data referensi untuk user, meja inspeksi, part, kategori, dan NG name."
-      />
+      {isHub && (
+        <>
+          <PageHeader
+            title="Master Data"
+            description="Pusat pengelolaan data referensi untuk user, meja inspeksi, part, kategori, dan NG name."
+          />
 
-      <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {MASTER_SECTIONS.map((section) => {
-          const Icon = section.icon;
-          return (
-            <Link key={section.to} to={section.to} className="block">
-              <Card className="h-full border-border/70 transition-transform hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <h3 className="text-base font-semibold">{section.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{section.description}</p>
-                <div className="mt-4 space-y-1 text-xs text-muted-foreground">
-                  {section.bullets.map((bullet) => (
-                    <div key={bullet}>{bullet}</div>
-                  ))}
-                </div>
-              </Card>
-            </Link>
-          );
-        })}
-      </div>
+          <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {MASTER_SECTIONS.map((section) => {
+              const Icon = section.icon;
+              return (
+                <Link key={section.to} to={section.to} className="block">
+                  <Card className="h-full border-border/70 transition-transform hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+                    <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                    <h3 className="text-base font-semibold">{section.title}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">{section.description}</p>
+                    <ul className="mt-4 space-y-1 text-xs text-muted-foreground">
+                      {section.bullets.map((bullet) => (
+                        <li key={bullet}>{bullet}</li>
+                      ))}
+                    </ul>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       <Outlet />
     </AppLayout>

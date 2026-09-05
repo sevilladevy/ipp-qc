@@ -195,8 +195,9 @@ export async function exportLaporanExcel(opts: {
 
       let zebra = false;
       for (const r of shiftRows) {
-        const detail = detailMap.get(r.id);
-        if (!detail) continue;
+        // Legacy reports may lack a detail row; emit zeros instead of
+        // dropping the report so Excel matches UI totals.
+        const detail = detailMap.get(r.id) ?? null;
         const row = ws.getRow(currentRow);
 
         row.getCell(1).value = no++;
@@ -215,13 +216,16 @@ export async function exportLaporanExcel(opts: {
         shiftTotals.ng += r.total_ng;
 
         DEFECT_COLUMNS.forEach((c, i) => {
-          const defectValues = detail as unknown as Record<string, number | null | undefined>;
+          const defectValues = (detail ?? {}) as unknown as Record<
+            string,
+            number | null | undefined
+          >;
           const v = Number(defectValues[c.key] ?? 0);
           row.getCell(11 + i).value = v || null;
           if (v) shiftDefects[c.key] = (shiftDefects[c.key] ?? 0) + v;
         });
 
-        const extras = (detail.extra_defects ?? {}) as Record<string, number>;
+        const extras = (detail?.extra_defects ?? {}) as Record<string, number>;
         extraKeyList.forEach((k, i) => {
           const v = Number(extras[k] ?? 0);
           row.getCell(11 + DEFECT_COLUMNS.length + i).value = v || null;

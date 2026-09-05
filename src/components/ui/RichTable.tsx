@@ -45,6 +45,7 @@ type RichTableProps<T> = {
   maxHeight?: string;
   emptyMessage?: string;
   className?: string;
+  exportFilename?: string;
 };
 
 function filterRows<T>(rows: T[], columns: RichColumn<T>[], query: string): T[] {
@@ -95,6 +96,7 @@ export function RichTable<T>({
   maxHeight,
   emptyMessage = "Tidak ada data",
   className,
+  exportFilename = "export",
 }: RichTableProps<T>) {
   const [sorts, setSorts] = useState<SortState[]>([]);
   const [page, setPage] = useState(0);
@@ -140,7 +142,7 @@ export function RichTable<T>({
 
   const handleExport = () => {
     exportToCsv({
-      filename: "export",
+      filename: exportFilename,
       columns: visibleCols.map((col) => ({
         key: col.key,
         label: col.header,
@@ -190,12 +192,14 @@ export function RichTable<T>({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Cari..."
-                className="min-w-0 flex-1 bg-transparent text-xs outline-none"
+                aria-label="Cari dalam tabel"
+                className="rich-search min-w-0 flex-1 bg-transparent text-xs outline-none"
               />
               {search && (
                 <button
                   onClick={() => setSearch("")}
-                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                  aria-label="Bersihkan pencarian"
+                  className="flex min-h-[32px] min-w-[32px] shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -288,6 +292,20 @@ export function RichTable<T>({
                       position: "relative",
                     }}
                     onClick={() => col.sortable && toggleSort(col.key)}
+                    onKeyDown={(e) => {
+                      if (col.sortable && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        toggleSort(col.key);
+                      }
+                    }}
+                    tabIndex={col.sortable ? 0 : undefined}
+                    aria-sort={
+                      sortDir === "asc"
+                        ? "ascending"
+                        : sortDir === "desc"
+                          ? "descending"
+                          : undefined
+                    }
                   >
                     <div className="inline-flex items-center gap-1">
                       {col.header}
@@ -374,7 +392,8 @@ export function RichTable<T>({
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={safePage <= 0}
-            className="rounded-md border border-border p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
+            aria-label="Halaman sebelumnya"
+            className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-40"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
@@ -384,7 +403,8 @@ export function RichTable<T>({
           <button
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={safePage >= totalPages - 1}
-            className="rounded-md border border-border p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
+            aria-label="Halaman berikutnya"
+            className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-40"
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>

@@ -22,6 +22,8 @@ type ChartSerie = {
   color: string;
   type?: "bar" | "area" | "line";
   hideInLegend?: boolean;
+  /** Y axis for mixed-scale composed charts (counts vs percents) */
+  axis?: "left" | "right";
 };
 
 type ChartWithValuesProps = {
@@ -214,70 +216,88 @@ export const ChartWithValues = memo(function ChartWithValues({
     </AreaChart>
   );
 
-  const renderComposedChart = () => (
-    <ComposedChart {...commonProps}>
-      {showGrid && (
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-      )}
-      <XAxis
-        dataKey={xKey}
-        tick={{ fontSize: 10 }}
-        tickLine={false}
-        axisLine={{ stroke: "var(--color-border)" }}
-      />
-      <YAxis
-        tick={{ fontSize: 10 }}
-        tickLine={false}
-        axisLine={false}
-        tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
-      />
-      <Tooltip formatter={tooltipFormatter} contentStyle={{ fontSize: 12, borderRadius: 6 }} />
-      {showLegend && <Legend wrapperStyle={{ fontSize: 11 }} />}
-      {series.map((s, i) => {
-        if (s.type === "line") {
-          return (
-            <Line
-              key={s.key}
-              type="monotone"
-              dataKey={s.key}
-              stroke={s.color || CHART_COLORS[i % CHART_COLORS.length]}
-              strokeWidth={2}
-              dot={showValues ? { r: 3 } : false}
-              label={showValues ? DotValueLabel : undefined}
-              isAnimationActive={false}
-            />
-          );
-        }
-        if (s.type === "area") {
-          return (
-            <Area
-              key={s.key}
-              type="monotone"
-              dataKey={s.key}
-              stroke={s.color || CHART_COLORS[i % CHART_COLORS.length]}
-              fill={s.color || CHART_COLORS[i % CHART_COLORS.length]}
-              fillOpacity={0.15}
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-          );
-        }
-        return (
-          <Bar
-            key={s.key}
-            dataKey={s.key}
-            fill={s.color || CHART_COLORS[i % CHART_COLORS.length]}
-            stackId={stacked ? "stack" : undefined}
-            radius={[3, 3, 0, 0]}
-            maxBarSize={32}
-            label={showValues ? BarValueLabel : undefined}
-            isAnimationActive={false}
+  const renderComposedChart = () => {
+    const useRightAxis = series.some((s) => s.axis === "right");
+    return (
+      <ComposedChart {...commonProps}>
+        {showGrid && (
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+        )}
+        <XAxis
+          dataKey={xKey}
+          tick={{ fontSize: 10 }}
+          tickLine={false}
+          axisLine={{ stroke: "var(--color-border)" }}
+        />
+        <YAxis
+          yAxisId="left"
+          tick={{ fontSize: 10 }}
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
+        />
+        {useRightAxis && (
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            tick={{ fontSize: 10 }}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v: number) => `${v}%`}
           />
-        );
-      })}
-    </ComposedChart>
-  );
+        )}
+        <Tooltip formatter={tooltipFormatter} contentStyle={{ fontSize: 12, borderRadius: 6 }} />
+        {showLegend && <Legend wrapperStyle={{ fontSize: 11 }} />}
+        {series.map((s, i) => {
+          const yAxisId = s.axis === "right" ? "right" : "left";
+          if (s.type === "line") {
+            return (
+              <Line
+                key={s.key}
+                yAxisId={yAxisId}
+                type="monotone"
+                dataKey={s.key}
+                stroke={s.color || CHART_COLORS[i % CHART_COLORS.length]}
+                strokeWidth={2}
+                dot={showValues ? { r: 3 } : false}
+                label={showValues ? DotValueLabel : undefined}
+                isAnimationActive={false}
+              />
+            );
+          }
+          if (s.type === "area") {
+            return (
+              <Area
+                key={s.key}
+                yAxisId={yAxisId}
+                type="monotone"
+                dataKey={s.key}
+                stroke={s.color || CHART_COLORS[i % CHART_COLORS.length]}
+                fill={s.color || CHART_COLORS[i % CHART_COLORS.length]}
+                fillOpacity={0.15}
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+              />
+            );
+          }
+          return (
+            <Bar
+              key={s.key}
+              yAxisId={yAxisId}
+              dataKey={s.key}
+              fill={s.color || CHART_COLORS[i % CHART_COLORS.length]}
+              stackId={stacked ? "stack" : undefined}
+              radius={[3, 3, 0, 0]}
+              maxBarSize={32}
+              label={showValues ? BarValueLabel : undefined}
+              isAnimationActive={false}
+            />
+          );
+        })}
+      </ComposedChart>
+    );
+  };
 
   return (
     <div className={cn("min-w-0", className)}>

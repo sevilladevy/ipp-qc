@@ -56,13 +56,13 @@ function LoginPage() {
     <div className="ipp-root">
       {/* LEFT PANEL */}
       <div className="ipp-left">
-        <div className="ipp-blob ipp-blob-1" />
-        <div className="ipp-blob ipp-blob-2" />
-        <div className="ipp-blob ipp-blob-3" />
-        <div className="ipp-dots" />
+        <div className="ipp-blob ipp-blob-1" aria-hidden="true" />
+        <div className="ipp-blob ipp-blob-2" aria-hidden="true" />
+        <div className="ipp-blob ipp-blob-3" aria-hidden="true" />
+        <div className="ipp-dots" aria-hidden="true" />
 
         <div className="ipp-left-content">
-          <div className="ipp-logo-stage">
+          <div className="ipp-logo-stage" aria-hidden="true">
             <div className="ipp-halo ipp-halo-1" />
             <div className="ipp-halo ipp-halo-2" />
             <div className="ipp-halo ipp-halo-3" />

@@ -1,14 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   DndContext,
+  KeyboardSensor,
+  TouchSensor,
   closestCenter,
   PointerSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import {
   SortableContext,
   arrayMove,
@@ -56,8 +59,10 @@ type DefectForm = {
 };
 
 function MasterDefect() {
-  const { data: defects } = useDefectTypes(false);
+  const defectsQuery = useDefectTypes(false);
+  const { data: defects } = defectsQuery;
   const qc = useQueryClient();
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [kat, setKat] = useState("");
   const [stat, setStat] = useState("");
@@ -108,6 +113,10 @@ function MasterDefect() {
     [filtered, page, pageSize],
   );
 
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
   async function save(form: DefectForm) {
     const payload: TablesUpdate<"defect_types"> = {
       nama_defect: form.nama_defect.trim(),
@@ -144,10 +153,15 @@ function MasterDefect() {
     const used = col && (usage?.[col] ?? 0) > 0;
     if (used)
       return toast.error("Defect sudah digunakan, tidak bisa dihapus. Gunakan Nonaktifkan.");
-    const { error } = await supabase.from("defect_types").delete().eq("id", d.id);
-    if (error) return toast.error(error.message);
-    toast.success("Dihapus");
-    qc.invalidateQueries({ queryKey: ["defect_types"] });
+    setDeletingId(d.id);
+    try {
+      const { error } = await supabase.from("defect_types").delete().eq("id", d.id);
+      if (error) return toast.error(error.message);
+      toast.success("Dihapus");
+      qc.invalidateQueries({ queryKey: ["defect_types"] });
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   async function toggleActive(d: DefectType) {
@@ -208,20 +222,37 @@ function MasterDefect() {
     setReorderMode(true);
   }
 
+  const [savingOrder, setSavingOrder] = useState(false);
+
   async function saveOrder() {
-    const updates = draftOrder.map((d, i) =>
-      supabase
-        .from("defect_types")
-        .update({ urutan: i + 1 })
-        .eq("id", d.id),
-    );
-    await Promise.all(updates);
-    toast.success("Urutan disimpan");
-    qc.invalidateQueries({ queryKey: ["defect_types"] });
-    setReorderMode(false);
+    setSavingOrder(true);
+    try {
+      const results = await Promise.all(
+        draftOrder.map((d, i) =>
+          supabase
+            .from("defect_types")
+            .update({ urutan: i + 1 })
+            .eq("id", d.id),
+        ),
+      );
+      const failed = results.find((r) => r.error);
+      if (failed?.error) {
+        toast.error(`Gagal menyimpan urutan: ${failed.error.message}`);
+        return;
+      }
+      toast.success("Urutan disimpan");
+      qc.invalidateQueries({ queryKey: ["defect_types"] });
+      setReorderMode(false);
+    } finally {
+      setSavingOrder(false);
+    }
   }
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e;
@@ -269,8 +300,8 @@ function MasterDefect() {
               <button onClick={() => setReorderMode(false)} className="btn-secondary">
                 Batal
               </button>
-              <button onClick={saveOrder} className="btn-primary">
-                Simpan Urutan
+              <button onClick={saveOrder} disabled={savingOrder} className="btn-primary">
+                {savingOrder ? "Menyimpan..." : "Simpan Urutan"}
               </button>
             </>
           )}
@@ -310,11 +341,13 @@ function MasterDefect() {
                   setPage(1);
                 }}
                 placeholder="Cari nama/kode..."
+                aria-label="Cari defect"
                 className="ipt6 pl-8"
               />
             </div>
             <select
               value={kat}
+              aria-label="Filter kategori"
               onChange={(e) => {
                 setKat(e.target.value);
                 setPage(1);
@@ -330,6 +363,7 @@ function MasterDefect() {
             </select>
             <select
               value={stat}
+              aria-label="Filter status"
               onChange={(e) => {
                 setStat(e.target.value);
                 setPage(1);
@@ -383,6 +417,26 @@ function MasterDefect() {
               </ul>
             </SortableContext>
           </DndContext>
+        ) : defectsQuery.isLoading ? (
+          <div className="p-6">
+            <EmptyState title="Memuat jenis defect..." />
+          </div>
+        ) : defectsQuery.isError ? (
+          <div className="p-6">
+            <EmptyState
+              title="Gagal memuat jenis defect"
+              description={
+                defectsQuery.error instanceof Error
+                  ? defectsQuery.error.message
+                  : "Terjadi kesalahan."
+              }
+            />
+            <div className="mt-3 flex justify-center">
+              <button type="button" onClick={() => defectsQuery.refetch()} className="btn2">
+                Coba lagi
+              </button>
+            </div>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="p-6">
             <EmptyState title="Tidak ada jenis defect" />
@@ -453,7 +507,8 @@ function MasterDefect() {
                                 setOpen(true);
                               }}
                               className="rounded p-1.5 text-info hover:bg-info/10 min-h-[44px] min-w-[44px]"
-                              title="Edit"
+                              title={`Edit ${d.nama_defect}`}
+                              aria-label={`Edit ${d.nama_defect}`}
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
@@ -461,6 +516,7 @@ function MasterDefect() {
                               onClick={() => toggleActive(d)}
                               className="rounded p-1.5 text-warning-foreground hover:bg-warning/15 min-h-[44px] min-w-[44px]"
                               title={d.is_active ? "Nonaktifkan" : "Aktifkan"}
+                              aria-label={`${d.is_active ? "Nonaktifkan" : "Aktifkan"} ${d.nama_defect}`}
                             >
                               {d.is_active ? (
                                 <EyeOff className="h-3.5 w-3.5" />
@@ -472,7 +528,8 @@ function MasterDefect() {
                               <button
                                 onClick={() => setConfirmDelete(d)}
                                 className="rounded p-1.5 text-destructive hover:bg-destructive/10 min-h-[44px] min-w-[44px]"
-                                title="Hapus"
+                                title={`Hapus ${d.nama_defect}`}
+                                aria-label={`Hapus ${d.nama_defect}`}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
@@ -516,6 +573,7 @@ function MasterDefect() {
           open={true}
           title="Hapus Jenis Defect"
           message={`Hapus jenis defect "${confirmDelete.nama_defect}"?`}
+          loading={deletingId !== null}
           onConfirm={() => {
             del(confirmDelete);
             setConfirmDelete(null);
@@ -542,7 +600,9 @@ function SortableRow({ d, index }: { d: DefectType; index: number }) {
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
+        aria-label={`Urutkan ${d.nama_defect}`}
+        aria-roledescription="sortable"
+        className="flex min-h-[44px] min-w-[44px] cursor-grab items-center justify-center text-muted-foreground hover:text-foreground active:cursor-grabbing"
       >
         <GripVertical className="h-4 w-4" />
       </button>
@@ -581,12 +641,22 @@ function DefectModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-lg bg-card shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label={initial ? "Edit Jenis Defect" : "Tambah Jenis Defect"}
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border bg-primary p-4 text-primary-foreground">
           <h3 className="font-semibold">{initial ? "Edit Jenis Defect" : "Tambah Jenis Defect"}</h3>
-          <button onClick={onClose}>✕</button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup dialog"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded hover:bg-white/10"
+          >
+            ✕
+          </button>
         </div>
         <form
           onSubmit={(e) => {

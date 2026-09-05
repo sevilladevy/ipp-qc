@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
-import { Card, PageHeader } from "@/components/ui-kit";
+import { Card, EmptyState, PageHeader } from "@/components/ui-kit";
 
 export const Route = createFileRoute("/builder")({
   component: () => (
@@ -20,9 +20,10 @@ function BuilderPage() {
       />
       <Card>
         <h2 className="text-sm font-semibold">Builder siap dikembangkan</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          File: <code>src/routes/builder.tsx</code>. Tambahkan form/kanban/konfigurasi di sini.
-        </p>
+        <EmptyState
+          title="Belum ada builder yang dikonfigurasi"
+          description="File: src/routes/builder.tsx. Tambahkan form/kanban/konfigurasi di sini."
+        />
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
           <Link className="underline" to="/">
             Dashboard

@@ -60,10 +60,12 @@ export function DataTableState({
   title,
   description,
   tone = "default",
+  action,
 }: {
   title: string;
   description?: string;
   tone?: "default" | "error";
+  action?: ReactNode;
 }) {
   return (
     <div
@@ -86,6 +88,7 @@ export function DataTableState({
           {description}
         </p>
       )}
+      {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }
@@ -107,6 +110,7 @@ export function SortableHeader({
     <button
       type="button"
       onClick={onClick}
+      aria-label={`${label}, diurut ${active ? (direction === "asc" ? "naik" : "turun") : "belum diurut"}`}
       className={cn(
         "inline-flex w-full items-center gap-1 rounded-sm px-0.5 py-0.5 font-inherit text-inherit hover:text-foreground",
         align === "right" && "justify-end",
@@ -170,7 +174,8 @@ export function DataTablePagination({
           type="button"
           onClick={() => onPageChange(Math.max(1, page - 1))}
           disabled={page <= 1}
-          className="rounded-md border border-border p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
+          aria-label="Halaman sebelumnya"
+          className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-40"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
@@ -178,7 +183,8 @@ export function DataTablePagination({
           type="button"
           onClick={() => onPageChange(Math.min(totalPages, page + 1))}
           disabled={page >= totalPages}
-          className="rounded-md border border-border p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
+          aria-label="Halaman berikutnya"
+          className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-40"
         >
           <ChevronRight className="h-3.5 w-3.5" />
         </button>

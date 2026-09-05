@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { AlertTriangle, X } from "lucide-react";
 
 export function ConfirmModal({
@@ -21,6 +22,15 @@ export function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onCancel();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onCancel]);
+
   if (!open) return null;
 
   return (

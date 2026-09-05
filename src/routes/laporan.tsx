@@ -115,7 +115,7 @@ function LaporanPage() {
             .gte("report_date", safeDateRange.from)
             .lte("report_date", safeDateRange.to)
             .order("report_date", { ascending: false })
-            .limit(500),
+            .limit(1000),
           supabase.from("profiles").select("id,full_name,email"),
         ]);
       if (reportError) throw reportError;
@@ -143,7 +143,10 @@ function LaporanPage() {
   );
 
   const mejaOptions = useMemo(
-    () => [...new Set(allRows.map((row) => row.no_meja))].sort((a, b) => a - b),
+    () =>
+      [...new Set(allRows.map((row) => row.no_meja))]
+        .filter((n) => Number.isFinite(n))
+        .sort((a, b) => (a as number) - (b as number)),
     [allRows],
   );
   const inspectorOptions = useMemo(() => {
@@ -161,8 +164,8 @@ function LaporanPage() {
     if (!keyword) return base;
     return base.filter((row) => {
       return (
-        row.part_name.toLowerCase().includes(keyword) ||
-        row.inspector_name.toLowerCase().includes(keyword) ||
+        (row.part_name ?? "").toLowerCase().includes(keyword) ||
+        (row.inspector_name ?? "").toLowerCase().includes(keyword) ||
         String(row.no_meja).includes(keyword)
       );
     });
@@ -188,6 +191,7 @@ function LaporanPage() {
   }, [groupBy, sortedRows]);
 
   const isGrouped = groupBy !== "none";
+  const isTruncated = (reportsQuery.data?.reports.length ?? 0) >= 1000;
   const totalRows = isGrouped ? groupedRows.length : sortedRows.length;
   const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
   const pageStart = (page - 1) * pageSize;
@@ -198,6 +202,7 @@ function LaporanPage() {
 
   useEffect(() => {
     setPage(1);
+    setExpanded({});
   }, [
     filters.from,
     filters.to,
@@ -224,14 +229,13 @@ function LaporanPage() {
   }, [filteredRows]);
 
   function toggleSort(next: SortKey) {
-    setSortKey((current) => {
-      if (current === next) {
-        setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
-        return current;
-      }
+    // State updaters must stay pure; derive next values from current state.
+    if (sortKey === next) {
+      setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(next);
       setSortDir(next === "report_date" ? "desc" : "asc");
-      return next;
-    });
+    }
     setPage(1);
   }
 
@@ -288,7 +292,10 @@ function LaporanPage() {
   function savePreset() {
     if (!presetName.trim()) return toast.error("Nama preset wajib diisi");
     const next: ReportPreset = {
-      id: crypto.randomUUID(),
+      id:
+        typeof crypto?.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `preset-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       name: presetName.trim(),
       filters,
       groupBy,
@@ -326,7 +333,7 @@ function LaporanPage() {
   async function exportExcelFile() {
     if (!sortedRows.length || isGrouped) return toast.error("Excel tersedia untuk mode detail");
     const { exportLaporanExcel } = await import("@/lib/excel-export");
-    const { year, month } = parseDateParts(filters.from);
+    const { year, month } = parseDateParts(safeDateRange.from);
     await exportLaporanExcel({
       reports: sortedRows,
       details: [...detailsById.values()],
@@ -341,7 +348,7 @@ function LaporanPage() {
   async function exportPdfFile() {
     if (!sortedRows.length || isGrouped) return toast.error("PDF tersedia untuk mode detail");
     const { exportLaporanPDF } = await import("@/lib/pdf-export");
-    const { year, month } = parseDateParts(filters.from);
+    const { year, month } = parseDateParts(safeDateRange.from);
     exportLaporanPDF({
       reports: sortedRows,
       year,
@@ -370,7 +377,7 @@ function LaporanPage() {
       });
     } else {
       exportToCsv({
-        filename: `laporan-detail-${filters.from}-${filters.to}`,
+        filename: `laporan-detail-${safeDateRange.from}-${safeDateRange.to}`,
         rows: sortedRows,
         columns: [
           { key: "report_date", label: "Tanggal", format: (row) => fmtDate(row.report_date) },
@@ -399,7 +406,7 @@ function LaporanPage() {
       await exportToPowerPoint({
         filename: `laporan-grouped-${groupBy}`,
         title: `Report Grouped by ${groupBy}`,
-        subtitle: `${filters.from} s/d ${filters.to}`,
+        subtitle: `${safeDateRange.from} s/d ${safeDateRange.to}`,
         rows: groupedRows,
         columns: [
           { key: "key", label: "Group" },
@@ -411,9 +418,9 @@ function LaporanPage() {
       });
     } else {
       await exportToPowerPoint({
-        filename: `laporan-detail-${filters.from}-${filters.to}`,
+        filename: `laporan-detail-${safeDateRange.from}-${safeDateRange.to}`,
         title: "Production Report Summary",
-        subtitle: `${filters.from} s/d ${filters.to}`,
+        subtitle: `${safeDateRange.from} s/d ${safeDateRange.to}`,
         rows: sortedRows,
         columns: [
           { key: "report_date", label: "Tanggal", format: (row) => fmtDate(row.report_date) },
@@ -432,7 +439,7 @@ function LaporanPage() {
     <div className="report-page">
       <PageHeader
         title="Report Management View"
-        description={`Qty Check ${fmtNum(summary.qtyCheck)} | Pass Rate ${fmtPct(summary.passRate)}`}
+        description={`Qty Check ${fmtNum(summary.qtyCheck)} | Pass Rate ${fmtPct(summary.passRate)} | NG ${fmtNum(summary.ng)} | Reports ${fmtNum(filteredRows.length)}${isTruncated ? " | ≥1000 baris, persempit rentang tanggal" : ""}`}
       >
         <button onClick={exportCsvFile} className="btn2">
           <Download className="h-4 w-4" /> CSV
@@ -478,6 +485,7 @@ function LaporanPage() {
                 type="date"
                 value={filters.from}
                 max={filters.to}
+                aria-label="Tanggal mulai"
                 onChange={(event) => setFilters((prev) => ({ ...prev, from: event.target.value }))}
                 className="ipt2"
               />
@@ -485,10 +493,12 @@ function LaporanPage() {
                 type="date"
                 value={filters.to}
                 min={filters.from}
+                aria-label="Tanggal selesai"
                 onChange={(event) => setFilters((prev) => ({ ...prev, to: event.target.value }))}
                 className="ipt2"
               />
               <select
+                aria-label="Filter meja"
                 value={filters.meja}
                 onChange={(event) =>
                   setFilters((prev) => ({
@@ -507,6 +517,7 @@ function LaporanPage() {
               </select>
               <select
                 value={filters.shift}
+                aria-label="Filter shift"
                 onChange={(event) => setFilters((prev) => ({ ...prev, shift: event.target.value }))}
                 className="ipt2"
               >
@@ -519,9 +530,17 @@ function LaporanPage() {
                 value={filters.part}
                 onChange={(event) => setFilters((prev) => ({ ...prev, part: event.target.value }))}
                 placeholder="Part"
+                aria-label="Filter part"
+                list="laporan-part-options"
                 className="ipt2"
               />
+              <datalist id="laporan-part-options">
+                {[...new Set(allRows.map((row) => row.part_name))].map((part) => (
+                  <option key={part} value={part} />
+                ))}
+              </datalist>
               <select
+                aria-label="Filter inspector"
                 value={filters.inspectorId}
                 onChange={(event) =>
                   setFilters((prev) => ({ ...prev, inspectorId: event.target.value }))
@@ -541,7 +560,8 @@ function LaporanPage() {
                 max={100}
                 step={1}
                 placeholder="Min pass rate %"
-                value={filters.minYield ? Math.round(filters.minYield * 100) : ""}
+                aria-label="Filter minimum pass rate persen"
+                value={filters.minYield != null ? Math.round(filters.minYield * 100) : ""}
                 onChange={(event) =>
                   setFilters((prev) => ({
                     ...prev,
@@ -571,11 +591,13 @@ function LaporanPage() {
                     setPage(1);
                   }}
                   placeholder="Search part/inspector/meja..."
+                  aria-label="Cari laporan"
                   className="ipt2 pl-8"
                 />
               </label>
               <select
                 value={groupBy}
+                aria-label="Kelompokkan laporan"
                 onChange={(event) => {
                   setGroupBy(event.target.value as GroupBy);
                   setPage(1);
@@ -594,6 +616,7 @@ function LaporanPage() {
                   value={presetName}
                   onChange={(event) => setPresetName(event.target.value)}
                   placeholder="Nama preset"
+                  aria-label="Nama preset baru"
                 />
                 <button className="btn2" onClick={savePreset}>
                   Save
@@ -607,7 +630,11 @@ function LaporanPage() {
                     <button className="preset-chip-name" onClick={() => loadPreset(preset.id)}>
                       {preset.name}
                     </button>
-                    <button className="preset-chip-remove" onClick={() => removePreset(preset.id)}>
+                    <button
+                      className="preset-chip-remove"
+                      onClick={() => removePreset(preset.id)}
+                      aria-label={`Hapus preset ${preset.name}`}
+                    >
                       x
                     </button>
                   </div>
@@ -629,6 +656,16 @@ function LaporanPage() {
               reportsQuery.error instanceof Error
                 ? reportsQuery.error.message
                 : "Terjadi kesalahan."
+            }
+            action={
+              <button
+                type="button"
+                onClick={() => reportsQuery.refetch()}
+                disabled={reportsQuery.isFetching}
+                className="btn2"
+              >
+                Coba lagi
+              </button>
             }
           />
         ) : !hasPageRows ? (
@@ -793,19 +830,21 @@ function LaporanPage() {
                                     : "destructive"
                               }
                             >
-                              {row.validation.score}
+                              {row.validation.score} ({row.validation.status})
                             </Badge>
                           </td>
                           <td data-label="Inspector" className="px-3 py-2.5 text-xs">
                             {row.inspector_name}
                           </td>
-                          <td data-label="Detail" className="px-3 py-2.5 text-center">
+                          <td data-label="Aksi" className="px-3 py-2.5 text-center">
                             <button
                               className="inline-flex rounded p-1.5 text-info hover:bg-info/10 min-h-[44px] min-w-[44px]"
                               onClick={() =>
                                 setExpanded((prev) => ({ ...prev, [row.id]: !prev[row.id] }))
                               }
                               title="Expand row"
+                              aria-label="Tampilkan detail baris"
+                              aria-expanded={isOpen}
                             >
                               <Eye className="h-3.5 w-3.5" />
                             </button>
@@ -818,6 +857,7 @@ function LaporanPage() {
                                 disabled={deletingId === row.id}
                                 className="inline-flex rounded p-1.5 text-destructive hover:bg-destructive/10 disabled:opacity-40 min-h-[44px] min-w-[44px]"
                                 title="Hapus laporan"
+                                aria-label={`Hapus laporan Meja ${row.no_meja} ${row.report_date}`}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
@@ -827,8 +867,8 @@ function LaporanPage() {
                         {isOpen && (
                           <tr key={`${row.id}-expanded`} className="card-expand bg-muted/30">
                             <td
-                              data-label="Detail"
-                              colSpan={20}
+                              data-label="Validation detail"
+                              colSpan={canDelete ? 12 : 11}
                               className="card-full px-4 py-3 text-xs"
                             >
                               <p className="font-semibold">Validation details</p>
@@ -841,16 +881,18 @@ function LaporanPage() {
                                   ))}
                                 </ul>
                               )}
-                              {detail && (
-                                <p className="mt-2 text-muted-foreground">
-                                  Defect detail terisi. Extra defects:{" "}
-                                  {
-                                    Object.keys(
-                                      (detail.extra_defects ?? {}) as Record<string, number>,
-                                    ).length
-                                  }
-                                </p>
-                              )}
+                              {detail &&
+                                typeof detail.extra_defects === "object" &&
+                                detail.extra_defects !== null &&
+                                !Array.isArray(detail.extra_defects) && (
+                                  <p className="mt-2 text-muted-foreground">
+                                    Defect detail terisi. Extra defects:{" "}
+                                    {
+                                      Object.keys(detail.extra_defects as Record<string, number>)
+                                        .length
+                                    }
+                                  </p>
+                                )}
                               <p className="mt-1 text-muted-foreground">
                                 Qty Check: {fmtNum(row.qty_check)} | OK: {fmtNum(row.total_ok)} |
                                 NG: {fmtNum(row.total_ng)} | Pass Rate:{" "}

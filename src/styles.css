@@ -261,6 +261,11 @@
       overflow-wrap: anywhere;
     }
 
+    /* NOTE: columns marked `hidden md:table-cell` intentionally reappear
+       as labelled cards below 640px (their data-labels make them
+       readable); the `hidden` class only collapses the 640-768px scroll
+       range. Do not force-hide them here. */
+
     .cardify tbody td:last-child {
       border-bottom: 0;
     }

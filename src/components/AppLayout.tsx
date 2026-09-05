@@ -13,6 +13,7 @@ import {
   PlusSquare,
   Settings,
   Users,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { APP_VERSION, STORAGE_KEYS } from "@/lib/constants";
@@ -48,8 +49,19 @@ const NAV: NavItem[] = [
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, isSupervisor, signOut } = useAuth();
   const router = useRouter();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Close the mobile drawer on Escape
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -88,9 +100,25 @@ export function AppLayout({ children }: { children: ReactNode }) {
       />
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setMobileOpen(false)}>
+        <div
+          className="fixed inset-0 z-40 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu navigasi"
+        >
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
           <div className="absolute left-0 top-0 h-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-end p-2">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Tutup menu navigasi"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-slate-200 hover:bg-white/10"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
             <Sidebar isSupervisor={isSupervisor} onNavigate={() => setMobileOpen(false)} />
           </div>
         </div>
@@ -133,7 +161,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main className="relative z-10 flex-1 p-3 pb-16 sm:p-4 lg:pb-4">{children}</main>
+        <main className="relative z-10 flex-1 p-3 pb-16 sm:px-4 sm:pb-16 sm:pt-4 lg:pb-4">
+          {children}
+        </main>
       </div>
 
       {/* Mobile bottom nav */}
@@ -149,11 +179,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[10px] font-medium transition-colors",
+                  "flex min-h-[48px] flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[10px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-5 w-5" />
                 {item.label}
               </Link>
             );

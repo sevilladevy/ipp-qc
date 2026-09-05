@@ -77,6 +77,8 @@ function Analitik() {
 
   const query = useQuery({
     queryKey: ["analytics-management", safeDateRange.from, safeDateRange.to],
+    refetchOnWindowFocus: false,
+    refetchInterval: 60_000,
     queryFn: async () => {
       const [{ data: reports, error: reportError }, { data: profiles, error: profileError }] =
         await Promise.all([
@@ -190,7 +192,9 @@ function Analitik() {
 
   const sankeyData = useMemo(() => {
     const shiftTotals = aggregateBy(filteredRows, "shift");
-    const topMejas = aggregateBy(filteredRows, "no_meja").slice(0, 4);
+    const topMejas = aggregateBy(filteredRows, "no_meja")
+      .sort((a, b) => b.ng - a.ng)
+      .slice(0, 4);
     const nodes = [
       ...shiftTotals.map((row) => ({ name: `Shift ${row.key}` })),
       ...topMejas.map((row) => ({ name: `Meja Inspeksi ${row.key}` })),
@@ -330,6 +334,7 @@ function Analitik() {
           <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
             <select
               className="ipt3"
+              aria-label="Filter meja"
               value={filters.meja}
               onChange={(event) =>
                 setFilters((prev) => ({
@@ -347,6 +352,7 @@ function Analitik() {
             </select>
             <select
               className="ipt3"
+              aria-label="Filter shift"
               value={filters.shift}
               onChange={(event) => setFilters((prev) => ({ ...prev, shift: event.target.value }))}
             >
@@ -357,6 +363,7 @@ function Analitik() {
             </select>
             <select
               className="ipt3"
+              aria-label="Filter inspector"
               value={filters.inspectorId}
               onChange={(event) =>
                 setFilters((prev) => ({ ...prev, inspectorId: event.target.value }))
@@ -372,6 +379,7 @@ function Analitik() {
             <input
               className="ipt3"
               placeholder="Filter part"
+              aria-label="Filter part"
               value={filters.part}
               list="analytics-part-options"
               onChange={(event) => setFilters((prev) => ({ ...prev, part: event.target.value }))}
@@ -416,7 +424,11 @@ function Analitik() {
         />
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-1 border-b border-border">
+      <div
+        className="mb-4 flex flex-wrap gap-1 border-b border-border"
+        role="tablist"
+        aria-label="Tampilan analitik"
+      >
         {(
           [
             ["overview", "Executive Summary"],
@@ -426,6 +438,8 @@ function Analitik() {
         ).map(([key, label]) => (
           <button
             key={key}
+            role="tab"
+            aria-selected={tab === key}
             onClick={() => setTab(key)}
             data-testid={`analytics-tab-${key}`}
             className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
@@ -590,7 +604,7 @@ function Analitik() {
               <Card className="lg:col-span-2">
                 <h3 className="text-sm font-semibold">Monitoring NG Rate & Pass Rate per Meja</h3>
                 <div className="mt-3 overflow-x-auto">
-                  <table className="table-pro w-full text-sm">
+                  <table className="table-pro cardify w-full text-sm">
                     <thead>
                       <tr>
                         <th className="px-3 py-2 text-left">Meja</th>
@@ -604,9 +618,13 @@ function Analitik() {
                     <tbody>
                       {mejaNgYieldRows.slice(0, 12).map((row) => (
                         <tr key={`monitor-meja-${row.key}`}>
-                          <td className="px-3 py-2 font-medium">Meja Inspeksi {row.key}</td>
-                          <td className="px-3 py-2 text-right">{fmtNum(row.qty_check)}</td>
-                          <td className="px-3 py-2 text-right text-destructive">
+                          <td data-label="Meja" className="px-3 py-2 font-medium">
+                            Meja Inspeksi {row.key}
+                          </td>
+                          <td data-label="Qty Check" className="px-3 py-2 text-right">
+                            {fmtNum(row.qty_check)}
+                          </td>
+                          <td data-label="NG" className="px-3 py-2 text-right text-destructive">
                             {fmtNum(row.ng)}
                           </td>
                           <td className="px-3 py-2 text-right">
@@ -622,8 +640,12 @@ function Analitik() {
                               {fmtPct(row.ngRate)}
                             </Badge>
                           </td>
-                          <td className="px-3 py-2 text-right">{fmtPct(row.passRate)}</td>
-                          <td className="px-3 py-2 text-right">{fmtNum(row.reports)}</td>
+                          <td data-label="Pass Rate" className="px-3 py-2 text-right">
+                            {fmtPct(row.passRate)}
+                          </td>
+                          <td data-label="Reports" className="px-3 py-2 text-right">
+                            {fmtNum(row.reports)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -634,7 +656,7 @@ function Analitik() {
               <Card>
                 <h3 className="text-sm font-semibold">Comparison by Shift</h3>
                 <div className="mt-3 overflow-x-auto">
-                  <table className="table-pro w-full text-sm">
+                  <table className="table-pro cardify w-full text-sm">
                     <thead>
                       <tr>
                         <th className="px-3 py-2 text-left">Shift</th>
@@ -646,12 +668,18 @@ function Analitik() {
                     <tbody>
                       {comparisonRows.byShift.map((row) => (
                         <tr key={row.key}>
-                          <td className="px-3 py-2">{row.key}</td>
-                          <td className="px-3 py-2 text-right">{fmtNum(row.qty_check)}</td>
-                          <td className="px-3 py-2 text-right text-destructive">
+                          <td data-label="Shift" className="px-3 py-2">
+                            {row.key}
+                          </td>
+                          <td data-label="Qty Check" className="px-3 py-2 text-right">
+                            {fmtNum(row.qty_check)}
+                          </td>
+                          <td data-label="NG" className="px-3 py-2 text-right text-destructive">
                             {fmtNum(row.ng)}
                           </td>
-                          <td className="px-3 py-2 text-right">{fmtPct(row.passRate)}</td>
+                          <td data-label="Pass Rate" className="px-3 py-2 text-right">
+                            {fmtPct(row.passRate)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -662,7 +690,7 @@ function Analitik() {
               <Card>
                 <h3 className="text-sm font-semibold">Top Machine Metrics</h3>
                 <div className="mt-3 overflow-x-auto">
-                  <table className="table-pro w-full text-sm">
+                  <table className="table-pro cardify w-full text-sm">
                     <thead>
                       <tr>
                         <th className="px-3 py-2 text-left">Meja</th>
@@ -675,13 +703,21 @@ function Analitik() {
                     <tbody>
                       {comparisonRows.byMeja.slice(0, 10).map((row) => (
                         <tr key={row.key}>
-                          <td className="px-3 py-2">Meja Inspeksi {row.key}</td>
-                          <td className="px-3 py-2 text-right">{fmtNum(row.qty_check)}</td>
-                          <td className="px-3 py-2 text-right text-destructive">
+                          <td data-label="Meja" className="px-3 py-2">
+                            Meja Inspeksi {row.key}
+                          </td>
+                          <td data-label="Qty Check" className="px-3 py-2 text-right">
+                            {fmtNum(row.qty_check)}
+                          </td>
+                          <td data-label="NG" className="px-3 py-2 text-right text-destructive">
                             {fmtNum(row.ng)}
                           </td>
-                          <td className="px-3 py-2 text-right">{fmtPct(row.passRate)}</td>
-                          <td className="px-3 py-2 text-right">{fmtPct(row.ngRate)}</td>
+                          <td data-label="Pass Rate" className="px-3 py-2 text-right">
+                            {fmtPct(row.passRate)}
+                          </td>
+                          <td data-label="NG Rate" className="px-3 py-2 text-right">
+                            {fmtPct(row.ngRate)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -692,7 +728,7 @@ function Analitik() {
               <Card>
                 <h3 className="text-sm font-semibold">Part Risk Ranking</h3>
                 <div className="mt-3 overflow-x-auto">
-                  <table className="table-pro w-full text-sm">
+                  <table className="table-pro cardify w-full text-sm">
                     <thead>
                       <tr>
                         <th className="px-3 py-2 text-left">Part</th>
@@ -705,13 +741,24 @@ function Analitik() {
                     <tbody>
                       {partNgYieldRows.slice(0, 10).map((row) => (
                         <tr key={`part-risk-${row.key}`}>
-                          <td className="px-3 py-2 font-medium">{row.key}</td>
-                          <td className="px-3 py-2 text-right">{fmtNum(row.reports)}</td>
-                          <td className="px-3 py-2 text-right">{fmtNum(row.qty_check)}</td>
-                          <td className="px-3 py-2 text-right text-destructive">
+                          <td data-label="Part" className="px-3 py-2 font-medium">
+                            {row.key}
+                          </td>
+                          <td data-label="Reports" className="px-3 py-2 text-right">
+                            {fmtNum(row.reports)}
+                          </td>
+                          <td data-label="Qty Check" className="px-3 py-2 text-right">
+                            {fmtNum(row.qty_check)}
+                          </td>
+                          <td
+                            data-label="NG Rate"
+                            className="px-3 py-2 text-right text-destructive"
+                          >
                             {fmtPct(row.ngRate)}
                           </td>
-                          <td className="px-3 py-2 text-right">{fmtPct(row.passRate)}</td>
+                          <td data-label="Pass Rate" className="px-3 py-2 text-right">
+                            {fmtPct(row.passRate)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -776,7 +823,7 @@ function Analitik() {
                       </ResponsiveContainer>
                     </StableChartContainer>
                     <div className="mt-3 overflow-x-auto">
-                      <table className="table-pro w-full text-sm">
+                      <table className="table-pro cardify w-full text-sm">
                         <thead>
                           <tr>
                             <th className="px-3 py-2 text-left">Part</th>
@@ -789,13 +836,21 @@ function Analitik() {
                         <tbody>
                           {ngParetoByProductRows.slice(0, 10).map((row) => (
                             <tr key={`ng-pareto-${row.key}`}>
-                              <td className="px-3 py-2 font-medium">{row.key}</td>
-                              <td className="px-3 py-2 text-right text-destructive">
+                              <td data-label="Part" className="px-3 py-2 font-medium">
+                                {row.key}
+                              </td>
+                              <td data-label="NG" className="px-3 py-2 text-right text-destructive">
                                 {fmtNum(row.baseValue)}
                               </td>
-                              <td className="px-3 py-2 text-right">{fmtPct(row.ngRate)}</td>
-                              <td className="px-3 py-2 text-right">{fmtPct(row.passRate)}</td>
-                              <td className="px-3 py-2 text-right">{row.cumPct.toFixed(2)}%</td>
+                              <td data-label="NG Rate" className="px-3 py-2 text-right">
+                                {fmtPct(row.ngRate)}
+                              </td>
+                              <td data-label="Pass Rate" className="px-3 py-2 text-right">
+                                {fmtPct(row.passRate)}
+                              </td>
+                              <td data-label="Cum%" className="px-3 py-2 text-right">
+                                {row.cumPct.toFixed(2)}%
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -813,8 +868,9 @@ function Analitik() {
                       <span className="w-24 text-muted-foreground">{cell.date}</span>
                       <span className="w-12">Meja Inspeksi {cell.meja}</span>
                       <progress
-                        value={Math.min(100, cell.ngRate * 1200)}
+                        value={Math.min(100, cell.ngRate * 100)}
                         max={100}
+                        aria-label={`NG rate ${cell.date} Meja Inspeksi ${cell.meja}: ${(cell.ngRate * 100).toFixed(2)} persen`}
                         className={cn(
                           "ng-heat-progress h-3 flex-1",
                           cell.ngRate < 0.02
@@ -864,7 +920,7 @@ function Analitik() {
                   ))}
                 </select>
                 <div className="mt-3 overflow-x-auto">
-                  <table className="table-pro w-full text-sm">
+                  <table className="table-pro cardify w-full text-sm">
                     <thead>
                       <tr>
                         <th className="px-3 py-2 text-left">Meja</th>
@@ -877,11 +933,19 @@ function Analitik() {
                     <tbody>
                       {deepDiveRows.map((row, idx) => (
                         <tr key={`${row.meja}-${row.shift}-${row.part}`}>
-                          <td className="px-3 py-2">Meja Inspeksi {row.meja}</td>
-                          <td className="px-3 py-2">{row.shift}</td>
-                          <td className="px-3 py-2">{row.part}</td>
-                          <td className="px-3 py-2 text-right">{fmtNum(row.defect)}</td>
-                          <td className="px-3 py-2 text-right">
+                          <td data-label="Meja" className="px-3 py-2">
+                            Meja Inspeksi {row.meja}
+                          </td>
+                          <td data-label="Shift" className="px-3 py-2">
+                            {row.shift}
+                          </td>
+                          <td data-label="Part" className="px-3 py-2">
+                            {row.part}
+                          </td>
+                          <td data-label="Defect" className="px-3 py-2 text-right">
+                            {fmtNum(row.defect)}
+                          </td>
+                          <td data-label="Rate" className="px-3 py-2 text-right">
                             <Badge
                               variant={idx < 3 ? "destructive" : idx < 7 ? "warning" : "outline"}
                             >

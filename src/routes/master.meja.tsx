@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge, EmptyState } from "@/components/ui-kit";
 import { DataTablePagination, DataTableShell } from "@/components/data-table";
 import { useDefaultPartsByTable, useInspectionTables, useParts } from "@/hooks/useMasterData";
@@ -33,7 +33,7 @@ type MejaForm = {
 };
 
 function MasterMeja() {
-  const { data: tables } = useInspectionTables();
+  const { data: tables, isLoading, isError, error, refetch } = useInspectionTables();
   const { data: defaultPartsMap } = useDefaultPartsByTable();
   const { data: allParts } = useParts();
   const qc = useQueryClient();
@@ -42,7 +42,7 @@ function MasterMeja() {
   const [editing, setEditing] = useState<Meja | null>(null);
   const [open, setOpen] = useState(false);
   const [partsModal, setPartsModal] = useState<Meja | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Meja | null>(null);
   const rows = useMemo(
     () => [...(tables ?? [])].sort((left, right) => left.no_meja - right.no_meja),
     [tables],
@@ -53,16 +53,31 @@ function MasterMeja() {
     [page, pageSize, rows],
   );
 
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
   async function save(form: MejaForm) {
+    const noMeja = Math.floor(Number(form.no_meja));
+    if (!Number.isFinite(noMeja) || noMeja <= 0) {
+      toast.error("No meja harus bilangan bulat lebih dari 0");
+      return;
+    }
     const payload: TablesInsert<"inspection_tables"> = {
-      no_meja: Number(form.no_meja),
+      no_meja: noMeja,
       nama_meja: form.nama_meja || null,
       status: form.status,
     };
     const { error } = editing
       ? await supabase.from("inspection_tables").update(payload).eq("id", editing.id)
       : await supabase.from("inspection_tables").insert(payload);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (error.code === "23505") {
+        toast.error(`Meja ${noMeja} sudah terdaftar`);
+        return;
+      }
+      return toast.error(error.message);
+    }
     toast.success("Meja tersimpan");
     qc.invalidateQueries({ queryKey: ["inspection_tables"] });
     setOpen(false);
@@ -178,7 +193,23 @@ function MasterMeja() {
             </>
           }
         >
-          {!rows.length ? (
+          {isLoading ? (
+            <div className="p-6">
+              <EmptyState title="Memuat meja..." />
+            </div>
+          ) : isError ? (
+            <div className="p-6">
+              <EmptyState
+                title="Gagal memuat meja"
+                description={error instanceof Error ? error.message : "Terjadi kesalahan."}
+              />
+              <div className="mt-3 flex justify-center">
+                <button type="button" onClick={() => refetch()} className="btn2">
+                  Coba lagi
+                </button>
+              </div>
+            </div>
+          ) : !rows.length ? (
             <div className="p-6">
               <EmptyState title="Belum ada meja" />
             </div>
@@ -233,7 +264,8 @@ function MasterMeja() {
                             <button
                               onClick={() => setPartsModal(m)}
                               className="rounded p-1.5 text-info/70 hover:bg-info/10 min-h-[44px] min-w-[44px]"
-                              title="Atur default part"
+                              title={`Atur default part Meja Inspeksi ${m.no_meja}`}
+                              aria-label={`Atur default part Meja Inspeksi ${m.no_meja}`}
                             >
                               <Package className="h-3.5 w-3.5" />
                             </button>
@@ -242,12 +274,16 @@ function MasterMeja() {
                                 setEditing(m);
                                 setOpen(true);
                               }}
+                              aria-label={`Edit Meja Inspeksi ${m.no_meja}`}
+                              title={`Edit Meja Inspeksi ${m.no_meja}`}
                               className="rounded p-1.5 text-info hover:bg-info/10 min-h-[44px] min-w-[44px]"
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </button>
                             <button
-                              onClick={() => setConfirmDelete(m.id)}
+                              onClick={() => setConfirmDelete(m)}
+                              aria-label={`Hapus Meja Inspeksi ${m.no_meja}`}
+                              title={`Hapus Meja Inspeksi ${m.no_meja}`}
                               className="rounded p-1.5 text-destructive hover:bg-destructive/10 min-h-[44px] min-w-[44px]"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -304,9 +340,9 @@ function MasterMeja() {
         <ConfirmModal
           open={true}
           title="Hapus Meja"
-          message="Hapus meja ini?"
+          message={`Hapus Meja Inspeksi ${confirmDelete.no_meja}${confirmDelete.nama_meja ? ` - ${confirmDelete.nama_meja}` : ""}?`}
           onConfirm={() => {
-            del(confirmDelete);
+            del(confirmDelete.id);
             setConfirmDelete(null);
           }}
           onCancel={() => setConfirmDelete(null)}
@@ -336,12 +372,22 @@ function MejaModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-lg bg-card shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label={initial ? "Edit Meja" : "Tambah Meja"}
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border bg-primary p-4 text-primary-foreground">
           <h3 className="font-semibold">{initial ? "Edit Meja" : "Tambah Meja"}</h3>
-          <button onClick={onClose}>✕</button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup dialog"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded hover:bg-white/10"
+          >
+            ✕
+          </button>
         </div>
         <form
           onSubmit={(e) => {
@@ -354,7 +400,11 @@ function MejaModal({
             <input
               type="number"
               required
+              min={1}
+              step={1}
               value={form.no_meja}
+              readOnly={!!initial}
+              title={initial ? "No meja tidak dapat diubah (terkait default part)" : undefined}
               onChange={(e) => setForm({ ...form, no_meja: e.target.value })}
               className="ipt4"
             />
@@ -459,12 +509,22 @@ function DefaultPartsModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-lg bg-card shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Default Part Meja ${meja.no_meja}`}
+        className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-lg bg-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border bg-primary p-4 text-primary-foreground">
           <h3 className="font-semibold">Default Part - Meja {meja.no_meja}</h3>
-          <button onClick={onClose}>✕</button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup dialog"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded hover:bg-white/10"
+          >
+            ✕
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
           <p className="mb-3 text-xs text-muted-foreground">
