@@ -55,6 +55,20 @@ const parts = [
   },
 ];
 
+// Attribute fixture rows to a real user so inspector names resolve
+// in the app (NULL created_by renders as "-").
+const E2E_OWNER_EMAIL = process.env.E2E_OWNER_EMAIL || "admin@ipp.com";
+
+async function resolveOwnerId() {
+  const { data, error } = await supabase.auth.admin.listUsers();
+  if (error) throw error;
+  const owner = (data?.users ?? []).find(
+    (u) => u.email?.toLowerCase() === E2E_OWNER_EMAIL.toLowerCase(),
+  );
+  if (!owner) throw new Error(`E2E owner not found: ${E2E_OWNER_EMAIL}`);
+  return owner.id;
+}
+
 const reports = dateRows.map(({ date, index }) => {
   const useAlpha = index % 2 === 0;
   const qty_check = 900 + index * 80;
@@ -72,7 +86,7 @@ const reports = dateRows.map(({ date, index }) => {
     total_ng: ng,
     jam_mulai: "08:00",
     jam_selesai: "16:00",
-    created_by: null,
+    created_by: null, // filled with owner id in run()
   };
 });
 
@@ -155,7 +169,8 @@ const run = async () => {
   const { error: partsError } = await supabase.from("parts").insert(parts);
   if (partsError) throw partsError;
 
-  const reportsToInsert = reports.map(({ _sortKey, ...rest }) => rest);
+  const ownerId = await resolveOwnerId();
+  const reportsToInsert = reports.map(({ _sortKey, ...rest }) => ({ ...rest, created_by: ownerId }));
   const { error: reportsError } = await supabase.from("inspection_reports").insert(reportsToInsert);
   if (reportsError) throw reportsError;
 

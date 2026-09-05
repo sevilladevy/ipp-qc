@@ -57,10 +57,12 @@ export function SubmitConfirmModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
-      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto max-sm:w-[calc(100%-1.5rem)] max-sm:rounded-2xl max-sm:p-4">
         <DialogHeader>
           <DialogTitle>Konfirmasi Submit Laporan</DialogTitle>
-          <DialogDescription>Periksa kembali data sebelum disimpan ke database.</DialogDescription>
+          <DialogDescription className="break-words">
+            Periksa kembali data sebelum disimpan ke database.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 text-sm">
@@ -97,20 +99,22 @@ export function SubmitConfirmModal({
                 Detail Defect
               </h4>
               <div className="overflow-x-auto rounded-md border border-border/60">
-                <table className="w-full min-w-105 text-left">
+                <table className="w-full min-w-105 text-left max-sm:min-w-0">
                   <thead className="bg-muted/40 text-[11px] uppercase text-muted-foreground">
                     <tr>
-                      <th className="px-3 py-1.5">Kode</th>
-                      <th className="px-3 py-1.5">Nama Defect</th>
-                      <th className="px-3 py-1.5 text-right">Jumlah</th>
+                      <th className="px-3 py-1.5 max-sm:px-2">Kode</th>
+                      <th className="px-3 py-1.5 max-sm:px-2">Nama Defect</th>
+                      <th className="px-3 py-1.5 text-right max-sm:px-2">Jumlah</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
                     {activeDefects.map((d) => (
                       <tr key={d.kode_defect}>
-                        <td className="px-3 py-1.5 font-mono text-xs">{d.kode_defect}</td>
-                        <td className="px-3 py-1.5">{d.nama_defect}</td>
-                        <td className="px-3 py-1.5 text-right font-medium">
+                        <td className="px-3 py-1.5 font-mono text-xs max-sm:px-2">
+                          {d.kode_defect}
+                        </td>
+                        <td className="break-words px-3 py-1.5 max-sm:px-2">{d.nama_defect}</td>
+                        <td className="px-3 py-1.5 text-right font-medium max-sm:px-2">
                           {defects[d.kode_defect]}
                         </td>
                       </tr>
@@ -137,9 +141,9 @@ export function SubmitConfirmModal({
 
 function Row({ label, value, span }: { label: string; value: string; span?: boolean }) {
   return (
-    <div className={span ? "col-span-2" : ""}>
+    <div className={span ? "col-span-2 min-w-0" : "min-w-0"}>
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{value}</dd>
+      <dd className="break-words font-medium">{value}</dd>
     </div>
   );
 }
