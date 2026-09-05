@@ -44,7 +44,8 @@ jobs:
       - name: Start App
         run: |
           mkdir -p reports
-          nohup npm run dev -- --host 127.0.0.1 --port 5173 > reports/vite-ci.log 2>&1 &
+          # Log outside the repo so dev-server output never triggers HMR reloads
+          nohup npm run dev -- --host 127.0.0.1 --port 5173 > /tmp/vite-ci.log 2>&1 &
 
       - name: Wait for App
         run: |
