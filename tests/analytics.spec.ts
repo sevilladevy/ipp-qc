@@ -16,8 +16,8 @@ test.describe("Analytics Page", () => {
     await page.click('button[type="submit"]');
     await page.waitForURL(BASE_URL + "/", { timeout: 30000 });
 
-    // Navigate to analytics
-    await page.click('a[href="/analitik"]');
+    // Navigate to analytics (sidebar on desktop, bottom nav on mobile)
+    await page.locator('a[href="/analitik"]:visible').click();
     await page.waitForURL(BASE_URL + "/analitik", { timeout: 10000 });
   });
 
@@ -84,6 +84,9 @@ test.describe("Analytics Page", () => {
 
     // At least one chart should be visible
     expect(hasPareto || hasTrend).toBeTruthy();
+
+    const width = page.viewportSize()?.width ?? 1280;
+    await page.screenshot({ path: `test-results/audit-analytics-${width}.png` });
   });
 
   test("should filter by shift", async ({ page }) => {

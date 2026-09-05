@@ -22,10 +22,10 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
-      // Smaller viewports only run the input flow (primary inspector
-      // device coverage); remaining specs stay desktop-only.
+      // Smaller viewports run the main flows; admin-heavy specs
+      // (auth, users, e2e) stay desktop-only.
       name: "Tablet",
-      testMatch: /input\.spec\.ts/,
+      testMatch: /(input|laporan|master-data|dashboard|analytics)\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 768, height: 1024 },
@@ -33,7 +33,7 @@ export default defineConfig({
     },
     {
       name: "Mobile",
-      testMatch: /input\.spec\.ts/,
+      testMatch: /(input|laporan|master-data|dashboard|analytics)\.spec\.ts/,
       use: { ...devices["Pixel 7"] },
     },
   ],

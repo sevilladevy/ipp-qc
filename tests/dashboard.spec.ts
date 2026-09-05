@@ -23,19 +23,30 @@ test.describe("Dashboard", () => {
       timeout: 10000,
     });
 
-    // Check page has content
-    await expect(page.getByText(/qty|yield|ng|reports/i).first()).toBeVisible({ timeout: 5000 });
+    // Check page has content (scoped to main; sidebar holds similar words)
+    await expect(
+      page
+        .locator("main")
+        .getByText(/qty|yield|ng|reports/i)
+        .first(),
+    ).toBeVisible({
+      timeout: 5000,
+    });
+
+    const width = page.viewportSize()?.width ?? 1280;
+    await page.screenshot({ path: `test-results/audit-dashboard-${width}.png` });
   });
 
   test("should display KPI cards", async ({ page }) => {
     // Wait for page to load
     await page.waitForTimeout(1000);
 
-    // Check for KPI labels - use first() for multiple matches
-    await expect(page.getByText(/qty\s*check/i).first()).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText(/yield/i).first()).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText(/ng\s*rate/i).first()).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText(/reports/i).first()).toBeVisible({ timeout: 5000 });
+    // Check for KPI labels - scoped to main content
+    const main = page.locator("main");
+    await expect(main.getByText(/qty\s*check/i).first()).toBeVisible({ timeout: 5000 });
+    await expect(main.getByText(/yield/i).first()).toBeVisible({ timeout: 5000 });
+    await expect(main.getByText(/ng\s*rate/i).first()).toBeVisible({ timeout: 5000 });
+    await expect(main.getByText(/reports/i).first()).toBeVisible({ timeout: 5000 });
   });
 
   test("should filter by meja", async ({ page }) => {
@@ -56,8 +67,8 @@ test.describe("Dashboard", () => {
   });
 
   test("should navigate to analytics page", async ({ page }) => {
-    // Click analytics link
-    await page.getByRole("link", { name: /analitik|analytics/i }).click();
+    // Click analytics link (sidebar on desktop, bottom nav on mobile)
+    await page.locator('a[href="/analitik"]:visible').click();
 
     // Wait for navigation
     await page.waitForURL(BASE_URL + "/analitik", { timeout: 10000 });
@@ -69,8 +80,8 @@ test.describe("Dashboard", () => {
   });
 
   test("should navigate to input page", async ({ page }) => {
-    // Click input link
-    await page.getByRole("link", { name: "Input", exact: true }).click();
+    // Click input link (sidebar on desktop, bottom nav on mobile)
+    await page.locator('a[href="/input"]:visible').click();
 
     // Wait for navigation
     await page.waitForURL(BASE_URL + "/input", { timeout: 10000 });
