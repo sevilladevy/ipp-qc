@@ -30,7 +30,6 @@ export const NC_SEVERITY_LABEL: Record<NcSeverity, string> = {
 };
 
 export type BadgeVariant = "default" | "info" | "success" | "warning" | "destructive";
-
 export function ncStatusVariant(status: NcStatus): BadgeVariant {
   switch (status) {
     case "open":
@@ -78,4 +77,84 @@ export function nextNcNumber(existing: string[], year: number, month: number): s
     if (seq !== null && seq > max) max = seq;
   }
   return buildNcNumber(year, month, max + 1);
+}
+
+export type AuditType = "internal" | "external" | "supplier";
+export type AuditStatus = "planned" | "in_progress" | "completed" | "overdue";
+
+export const AUDIT_TYPES: AuditType[] = ["internal", "external", "supplier"];
+export const AUDIT_STATUSES: AuditStatus[] = ["planned", "in_progress", "completed", "overdue"];
+
+export const AUDIT_TYPE_LABEL: Record<AuditType, string> = {
+  internal: "Internal",
+  external: "Eksternal",
+  supplier: "Supplier",
+};
+
+export const AUDIT_STATUS_LABEL: Record<AuditStatus, string> = {
+  planned: "Planned",
+  in_progress: "In Progress",
+  completed: "Completed",
+  overdue: "Overdue",
+};
+
+export function auditStatusVariant(status: AuditStatus): BadgeVariant {
+  switch (status) {
+    case "planned":
+      return "info";
+    case "in_progress":
+      return "warning";
+    case "completed":
+      return "success";
+    case "overdue":
+      return "destructive";
+  }
+}
+
+/** Overdue turunan: planned_date lewat dan status belum completed. */
+export function isAuditOverdue(plannedDate: string, status: AuditStatus, today: string): boolean {
+  return status !== "completed" && plannedDate < today;
+}
+
+export type ChecklistItem = {
+  id: string;
+  text: string;
+  clause: string;
+  done: boolean;
+  note: string;
+};
+
+export type AuditChecklist = {
+  items: ChecklistItem[];
+};
+
+export function parseChecklist(raw: unknown): AuditChecklist {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return { items: [] };
+  const items = (raw as { items?: unknown }).items;
+  if (!Array.isArray(items)) return { items: [] };
+  return {
+    items: items
+      .filter(
+        (it): it is Record<string, unknown> =>
+          typeof it === "object" && it !== null && !Array.isArray(it),
+      )
+      .map((it) => ({
+        id: typeof it.id === "string" ? it.id : `${Date.now()}-${Math.random()}`,
+        text: typeof it.text === "string" ? it.text : "",
+        clause: typeof it.clause === "string" ? it.clause : "",
+        done: it.done === true,
+        note: typeof it.note === "string" ? it.note : "",
+      }))
+      .filter((it) => it.text.trim() !== ""),
+  };
+}
+
+export function toggleChecklistItem(checklist: AuditChecklist, id: string): AuditChecklist {
+  return {
+    items: checklist.items.map((it) => (it.id === id ? { ...it, done: !it.done } : it)),
+  };
+}
+
+export function removeChecklistItem(checklist: AuditChecklist, id: string): AuditChecklist {
+  return { items: checklist.items.filter((it) => it.id !== id) };
 }

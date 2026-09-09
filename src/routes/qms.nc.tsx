@@ -118,6 +118,7 @@ function QmsNcPage() {
   const { data: profiles } = useQmsProfiles();
   const { createNc, updateNc, deleteNc } = useNcMutations();
   const canManage = isPrivilegedUser(role, user?.email);
+  const canRaise = user !== null;
 
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -144,8 +145,8 @@ function QmsNcPage() {
   // Prefill dari halaman laporan (?create=1&source=daily_qc&sourceId=...&description=...)
   useEffect(() => {
     if (prefillUsedRef.current || search.create !== "1") return;
-    if (!canManage) {
-      toast.error("Hanya supervisor yang dapat membuat NC");
+    if (!user) {
+      toast.error("Silakan login untuk membuat NC");
       return;
     }
     prefillUsedRef.current = true;
@@ -157,7 +158,7 @@ function QmsNcPage() {
       description: search.description || "",
     });
     setModalOpen(true);
-  }, [search, canManage]);
+  }, [search, user]);
 
   const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
@@ -184,7 +185,7 @@ function QmsNcPage() {
   }, [page, totalPages]);
 
   function openCreate() {
-    if (!canManage) return toast.error("Hanya supervisor yang dapat membuat NC");
+    if (!user) return toast.error("Silakan login untuk membuat NC");
     setEditing(null);
     setForm(EMPTY_FORM);
     setModalOpen(true);
@@ -207,7 +208,8 @@ function QmsNcPage() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!canManage) return toast.error("Hanya supervisor yang dapat menyimpan NC");
+    if (!user) return toast.error("Silakan login untuk menyimpan NC");
+    if (editing && !canManage) return toast.error("Hanya supervisor yang dapat mengubah NC");
     if (!form.description.trim()) return toast.error("Deskripsi wajib diisi");
     if ((form.status === "verified" || form.status === "closed") && !form.closure_note.trim()) {
       return toast.error("Closure note wajib diisi saat Verified/Closed");
@@ -338,7 +340,7 @@ function QmsNcPage() {
             <RefreshCw className="h-4 w-4" />
             Refresh
           </button>
-          {canManage && (
+          {canRaise && (
             <button onClick={openCreate} className="btn-primary">
               <Plus className="h-4 w-4" />
               Buat NC

@@ -106,3 +106,126 @@ export function useNcMutations() {
 
   return { createNc, updateNc, deleteNc, invalidate };
 }
+
+export type AuditSchedule = Tables<"audit_schedules">;
+export type AuditFinding = Tables<"audit_findings">;
+export type AuditScheduleInsert = TablesInsert<"audit_schedules">;
+export type AuditScheduleUpdate = TablesUpdate<"audit_schedules">;
+export type AuditFindingInsert = TablesInsert<"audit_findings">;
+export type AuditFindingUpdate = TablesUpdate<"audit_findings">;
+
+export const AUDIT_QUERY_KEY = ["audit_schedules"] as const;
+export const auditFindingsKey = (auditId: string | null) => ["audit_findings", auditId] as const;
+
+export function useAuditSchedules() {
+  return useQuery({
+    queryKey: AUDIT_QUERY_KEY,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_schedules")
+        .select("*")
+        .order("planned_date", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as AuditSchedule[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useAuditFindings(auditId: string | null) {
+  return useQuery({
+    queryKey: auditFindingsKey(auditId),
+    queryFn: async () => {
+      if (!auditId) return [] as AuditFinding[];
+      const { data, error } = await supabase
+        .from("audit_findings")
+        .select("*")
+        .eq("audit_id", auditId)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as AuditFinding[];
+    },
+    enabled: auditId != null,
+    staleTime: 30_000,
+  });
+}
+
+export function useAuditMutations() {
+  const qc = useQueryClient();
+
+  function invalidate(auditId?: string | null) {
+    qc.invalidateQueries({ queryKey: AUDIT_QUERY_KEY });
+    if (auditId) qc.invalidateQueries({ queryKey: auditFindingsKey(auditId) });
+  }
+
+  async function createSchedule(
+    input: AuditScheduleInsert,
+    createdBy: string | null,
+  ): Promise<AuditSchedule> {
+    const { data, error } = await supabase
+      .from("audit_schedules")
+      .insert({ ...input, created_by: createdBy })
+      .select("*")
+      .single();
+    if (error) throw error;
+    invalidate();
+    return data as AuditSchedule;
+  }
+
+  async function updateSchedule(id: string, patch: AuditScheduleUpdate): Promise<AuditSchedule> {
+    const { data, error } = await supabase
+      .from("audit_schedules")
+      .update(patch)
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    invalidate();
+    return data as AuditSchedule;
+  }
+
+  async function deleteSchedule(id: string): Promise<void> {
+    const { error } = await supabase.from("audit_schedules").delete().eq("id", id);
+    if (error) throw error;
+    invalidate(id);
+  }
+
+  async function createFinding(input: AuditFindingInsert): Promise<AuditFinding> {
+    const { data, error } = await supabase
+      .from("audit_findings")
+      .insert(input)
+      .select("*")
+      .single();
+    if (error) throw error;
+    invalidate(input.audit_id);
+    return data as AuditFinding;
+  }
+
+  async function updateFinding(id: string, auditId: string, patch: AuditFindingUpdate) {
+    const { data, error } = await supabase
+      .from("audit_findings")
+      .update(patch)
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    invalidate(auditId);
+    return data as AuditFinding;
+  }
+
+  async function deleteFinding(id: string, auditId: string): Promise<void> {
+    const { error } = await supabase.from("audit_findings").delete().eq("id", id);
+    if (error) throw error;
+    invalidate(auditId);
+  }
+
+  return {
+    createSchedule,
+    updateSchedule,
+    deleteSchedule,
+    createFinding,
+    updateFinding,
+    deleteFinding,
+    invalidate,
+  };
+}

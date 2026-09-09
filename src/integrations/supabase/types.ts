@@ -412,6 +412,93 @@ export type Database = {
         };
         Relationships: [];
       };
+      audit_schedules: {
+        Row: {
+          area: string | null;
+          audit_team: string[] | null;
+          audit_type: Database["public"]["Enums"]["audit_type"];
+          checklist: Json | null;
+          completed_date: string | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          lead_auditor: string | null;
+          notes: string | null;
+          planned_date: string;
+          scope: string;
+          status: Database["public"]["Enums"]["audit_status"];
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          area?: string | null;
+          audit_team?: string[] | null;
+          audit_type?: Database["public"]["Enums"]["audit_type"];
+          checklist?: Record<string, unknown> | null;
+          completed_date?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          lead_auditor?: string | null;
+          notes?: string | null;
+          planned_date: string;
+          scope: string;
+          status?: Database["public"]["Enums"]["audit_status"];
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          area?: string | null;
+          audit_team?: string[] | null;
+          audit_type?: Database["public"]["Enums"]["audit_type"];
+          checklist?: Record<string, unknown> | null;
+          completed_date?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          lead_auditor?: string | null;
+          notes?: string | null;
+          planned_date?: string;
+          scope?: string;
+          status?: Database["public"]["Enums"]["audit_status"];
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      audit_findings: {
+        Row: {
+          audit_id: string;
+          clause: string | null;
+          corrected_at: string | null;
+          created_at: string;
+          finding: string;
+          id: string;
+          objective_evidence: string | null;
+          severity: Database["public"]["Enums"]["audit_finding_severity"];
+        };
+        Insert: {
+          audit_id: string;
+          clause?: string | null;
+          corrected_at?: string | null;
+          created_at?: string;
+          finding: string;
+          id?: string;
+          objective_evidence?: string | null;
+          severity?: Database["public"]["Enums"]["audit_finding_severity"];
+        };
+        Update: {
+          audit_id?: string;
+          clause?: string | null;
+          corrected_at?: string | null;
+          created_at?: string;
+          finding?: string;
+          id?: string;
+          objective_evidence?: string | null;
+          severity?: Database["public"]["Enums"]["audit_finding_severity"];
+        };
+        Relationships: [];
+      };
       non_conformities: {
         Row: {
           assigned_to: string | null;
@@ -495,6 +582,8 @@ export type Database = {
       app_role: "inspector" | "supervisor";
       inspection_shift: "A" | "B" | "C";
       audit_finding_severity: "minor" | "major" | "critical" | "observation";
+      audit_type: "internal" | "external" | "supplier";
+      audit_status: "planned" | "in_progress" | "completed" | "overdue";
       nc_status: "open" | "in_progress" | "verified" | "closed";
       ca_priority: "low" | "medium" | "high" | "critical";
     };
@@ -628,6 +717,8 @@ export const Constants = {
       app_role: ["inspector", "supervisor"],
       inspection_shift: ["A", "B", "C"],
       audit_finding_severity: ["minor", "major", "critical", "observation"],
+      audit_type: ["internal", "external", "supplier"],
+      audit_status: ["planned", "in_progress", "completed", "overdue"],
       nc_status: ["open", "in_progress", "verified", "closed"],
       ca_priority: ["low", "medium", "high", "critical"],
     },

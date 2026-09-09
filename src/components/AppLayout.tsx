@@ -36,7 +36,10 @@ const NAV: NavItem[] = [
     to: "/qms",
     label: "QMS",
     icon: AlertTriangle,
-    children: [{ to: "/qms/nc", label: "Non-Conformity", icon: Cog }],
+    children: [
+      { to: "/qms/nc", label: "Non-Conformity", icon: Cog },
+      { to: "/qms/audit", label: "Audit", icon: Cog },
+    ],
   },
   {
     to: "/master",

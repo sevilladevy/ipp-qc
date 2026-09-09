@@ -901,7 +901,7 @@ function LaporanPage() {
                                   row.qty_check > 0 ? (row.total_ok ?? 0) / row.qty_check : 0,
                                 )}
                               </p>
-                              {canDelete && (
+                              {user && (
                                 <button
                                   type="button"
                                   className="tag mt-2"

@@ -21,6 +21,7 @@ import { Route as MasterDefectTypesRouteImport } from './routes/master.defect-ty
 import { Route as MasterMejaRouteImport } from './routes/master.meja'
 import { Route as MasterPartRouteImport } from './routes/master.part'
 import { Route as MasterUsersRouteImport } from './routes/master.users'
+import { Route as QmsAuditRouteImport } from './routes/qms.audit'
 import { Route as QmsNcRouteImport } from './routes/qms.nc'
 
 const IndexRoute = IndexRouteImport.update({
@@ -83,6 +84,11 @@ const MasterUsersRoute = MasterUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => MasterRoute,
 } as any)
+const QmsAuditRoute = QmsAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => QmsRoute,
+} as any)
 const QmsNcRoute = QmsNcRouteImport.update({
   id: '/nc',
   path: '/nc',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/master/meja': typeof MasterMejaRoute
   '/master/part': typeof MasterPartRoute
   '/master/users': typeof MasterUsersRoute
+  '/qms/audit': typeof QmsAuditRoute
   '/qms/nc': typeof QmsNcRoute
 }
 export interface FileRoutesByTo {
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/master/meja': typeof MasterMejaRoute
   '/master/part': typeof MasterPartRoute
   '/master/users': typeof MasterUsersRoute
+  '/qms/audit': typeof QmsAuditRoute
   '/qms/nc': typeof QmsNcRoute
 }
 export interface FileRoutesById {
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/master/meja': typeof MasterMejaRoute
   '/master/part': typeof MasterPartRoute
   '/master/users': typeof MasterUsersRoute
+  '/qms/audit': typeof QmsAuditRoute
   '/qms/nc': typeof QmsNcRoute
 }
 export interface FileRouteTypes {
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/master/meja'
     | '/master/part'
     | '/master/users'
+    | '/qms/audit'
     | '/qms/nc'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/master/meja'
     | '/master/part'
     | '/master/users'
+    | '/qms/audit'
     | '/qms/nc'
   id:
     | '__root__'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/master/meja'
     | '/master/part'
     | '/master/users'
+    | '/qms/audit'
     | '/qms/nc'
   fileRoutesById: FileRoutesById
 }
@@ -280,6 +292,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MasterUsersRouteImport
       parentRoute: typeof MasterRoute
     }
+    '/qms/audit': {
+      id: '/qms/audit'
+      path: '/audit'
+      fullPath: '/qms/audit'
+      preLoaderRoute: typeof QmsAuditRouteImport
+      parentRoute: typeof QmsRoute
+    }
     '/qms/nc': {
       id: '/qms/nc'
       path: '/nc'
@@ -308,10 +327,12 @@ const MasterRouteWithChildren =
   MasterRoute._addFileChildren(MasterRouteChildren)
 
 interface QmsRouteChildren {
+  QmsAuditRoute: typeof QmsAuditRoute
   QmsNcRoute: typeof QmsNcRoute
 }
 
 const QmsRouteChildren: QmsRouteChildren = {
+  QmsAuditRoute: QmsAuditRoute,
   QmsNcRoute: QmsNcRoute,
 }
 

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { buildNcNumber, nextNcNumber, parseNcSeq } from "@/lib/qms";
+import {
+  buildNcNumber,
+  isAuditOverdue,
+  nextNcNumber,
+  parseChecklist,
+  parseNcSeq,
+  removeChecklistItem,
+  toggleChecklistItem,
+} from "@/lib/qms";
 
 describe("buildNcNumber", () => {
   it("formats NC-YYYYMM-### with zero padding", () => {
@@ -33,5 +41,33 @@ describe("nextNcNumber", () => {
 
   it("ignores numbers from other periods", () => {
     expect(nextNcNumber(["NC-202608-099", "NC-202609-001"], 2026, 9)).toBe("NC-202609-002");
+  });
+});
+
+describe("isAuditOverdue", () => {
+  it("flags past planned dates unless completed", () => {
+    expect(isAuditOverdue("2026-09-01", "planned", "2026-09-09")).toBe(true);
+    expect(isAuditOverdue("2026-09-01", "in_progress", "2026-09-09")).toBe(true);
+    expect(isAuditOverdue("2026-09-01", "completed", "2026-09-09")).toBe(false);
+    expect(isAuditOverdue("2026-09-10", "planned", "2026-09-09")).toBe(false);
+  });
+});
+
+describe("checklist helpers", () => {
+  it("parses raw JSONB into items and drops empties", () => {
+    expect(parseChecklist(null)).toEqual({ items: [] });
+    expect(
+      parseChecklist({ items: [{ text: "  " }, { text: "Cek dokumen", clause: "7.5" }] }),
+    ).toEqual({
+      items: [expect.objectContaining({ text: "Cek dokumen", clause: "7.5", done: false })],
+    });
+  });
+
+  it("toggles and removes items by id", () => {
+    const list = {
+      items: [{ id: "a", text: "Satu", clause: "", done: false, note: "" }],
+    };
+    expect(toggleChecklistItem(list, "a").items[0]?.done).toBe(true);
+    expect(removeChecklistItem(list, "a").items).toEqual([]);
   });
 });
