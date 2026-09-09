@@ -229,3 +229,124 @@ export function useAuditMutations() {
     invalidate,
   };
 }
+
+export type Improvement = Tables<"improvements">;
+export type ImprovementInsert = TablesInsert<"improvements">;
+export type ImprovementUpdate = TablesUpdate<"improvements">;
+export type ManagementReview = Tables<"management_reviews">;
+export type ReviewInsert = TablesInsert<"management_reviews">;
+export type ReviewUpdate = TablesUpdate<"management_reviews">;
+
+export const IMPROVEMENT_QUERY_KEY = ["improvements"] as const;
+export const REVIEW_QUERY_KEY = ["management_reviews"] as const;
+
+export function useImprovements() {
+  return useQuery({
+    queryKey: IMPROVEMENT_QUERY_KEY,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("improvements")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Improvement[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useManagementReviews() {
+  return useQuery({
+    queryKey: REVIEW_QUERY_KEY,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("management_reviews")
+        .select("*")
+        .order("review_date", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as ManagementReview[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useImprovementMutations() {
+  const qc = useQueryClient();
+
+  function invalidate() {
+    qc.invalidateQueries({ queryKey: IMPROVEMENT_QUERY_KEY });
+  }
+
+  async function createImprovement(
+    input: ImprovementInsert,
+    createdBy: string | null,
+  ): Promise<Improvement> {
+    const { data, error } = await supabase
+      .from("improvements")
+      .insert({ ...input, created_by: createdBy })
+      .select("*")
+      .single();
+    if (error) throw error;
+    invalidate();
+    return data as Improvement;
+  }
+
+  async function updateImprovement(id: string, patch: ImprovementUpdate): Promise<Improvement> {
+    const { data, error } = await supabase
+      .from("improvements")
+      .update(patch)
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    invalidate();
+    return data as Improvement;
+  }
+
+  async function deleteImprovement(id: string): Promise<void> {
+    const { error } = await supabase.from("improvements").delete().eq("id", id);
+    if (error) throw error;
+    invalidate();
+  }
+
+  return { createImprovement, updateImprovement, deleteImprovement, invalidate };
+}
+
+export function useReviewMutations() {
+  const qc = useQueryClient();
+
+  function invalidate() {
+    qc.invalidateQueries({ queryKey: REVIEW_QUERY_KEY });
+  }
+
+  async function createReview(input: ReviewInsert, createdBy: string | null) {
+    const { data, error } = await supabase
+      .from("management_reviews")
+      .insert({ ...input, created_by: createdBy })
+      .select("*")
+      .single();
+    if (error) throw error;
+    invalidate();
+    return data as ManagementReview;
+  }
+
+  async function updateReview(id: string, patch: ReviewUpdate) {
+    const { data, error } = await supabase
+      .from("management_reviews")
+      .update(patch)
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    invalidate();
+    return data as ManagementReview;
+  }
+
+  async function deleteReview(id: string): Promise<void> {
+    const { error } = await supabase.from("management_reviews").delete().eq("id", id);
+    if (error) throw error;
+    invalidate();
+  }
+
+  return { createReview, updateReview, deleteReview, invalidate };
+}

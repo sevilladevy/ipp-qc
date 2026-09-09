@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, PageHeader } from "@/components/ui-kit";
-import { AlertTriangle, ClipboardCheck } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, TrendingUp, Users } from "lucide-react";
 
 export const Route = createFileRoute("/qms")({
   component: QmsLayout,
@@ -22,6 +22,20 @@ const QMS_SECTIONS = [
     icon: ClipboardCheck,
     bullets: ["Audit internal/eksternal/supplier", "Checklist per klausul", "Temuan → NC"],
   },
+  {
+    to: "/qms/improvement",
+    title: "Continual Improvement",
+    description: "Usulan perbaikan mutu, proses, safety, dan efisiensi beserta hasilnya.",
+    icon: TrendingUp,
+    bullets: ["Usulan & prioritas", "Lacak status & deadline", "Lesson learned"],
+  },
+  {
+    to: "/qms/review",
+    title: "Management Review",
+    description: "Risalah tinjauan manajemen: agenda, keputusan, dan action items.",
+    icon: Users,
+    bullets: ["Agenda & notulen", "Keputusan", "Action items"],
+  },
 ];
 
 function QmsLayout() {
@@ -37,7 +51,7 @@ function QmsLayout() {
             description="Audit, ketidaksesuaian, tindakan korektif, dan continual improvement (ISO 9001:2015)."
           />
 
-          <div className="mb-6 grid gap-4 md:grid-cols-2">
+          <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {QMS_SECTIONS.map((section) => {
               const Icon = section.icon;
               return (

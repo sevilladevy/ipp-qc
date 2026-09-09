@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   buildNcNumber,
   isAuditOverdue,
+  linesToList,
   nextNcNumber,
   parseChecklist,
   parseNcSeq,
+  parseStringList,
   removeChecklistItem,
   toggleChecklistItem,
 } from "@/lib/qms";
@@ -69,5 +71,14 @@ describe("checklist helpers", () => {
     };
     expect(toggleChecklistItem(list, "a").items[0]?.done).toBe(true);
     expect(removeChecklistItem(list, "a").items).toEqual([]);
+  });
+});
+
+describe("string list helpers", () => {
+  it("parses arrays and newline text", () => {
+    expect(parseStringList(["a", 1, "  b  ", ""])).toEqual(["a", "b"]);
+    expect(parseStringList("x\ny\n\nz")).toEqual(["x", "y", "z"]);
+    expect(parseStringList(null)).toEqual([]);
+    expect(linesToList("satu\ndua")).toEqual(["satu", "dua"]);
   });
 });

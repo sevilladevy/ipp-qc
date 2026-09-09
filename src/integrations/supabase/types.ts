@@ -434,7 +434,7 @@ export type Database = {
           area?: string | null;
           audit_team?: string[] | null;
           audit_type?: Database["public"]["Enums"]["audit_type"];
-          checklist?: Record<string, unknown> | null;
+          checklist?: Json | null;
           completed_date?: string | null;
           created_at?: string;
           created_by?: string | null;
@@ -451,7 +451,7 @@ export type Database = {
           area?: string | null;
           audit_team?: string[] | null;
           audit_type?: Database["public"]["Enums"]["audit_type"];
-          checklist?: Record<string, unknown> | null;
+          checklist?: Json | null;
           completed_date?: string | null;
           created_at?: string;
           created_by?: string | null;
@@ -496,6 +496,117 @@ export type Database = {
           id?: string;
           objective_evidence?: string | null;
           severity?: Database["public"]["Enums"]["audit_finding_severity"];
+        };
+        Relationships: [];
+      };
+      improvements: {
+        Row: {
+          actual_result: string | null;
+          assigned_to: string | null;
+          category: string;
+          completed_at: string | null;
+          created_at: string;
+          created_by: string | null;
+          deadline: string | null;
+          description: string;
+          expected_benefit: string | null;
+          id: string;
+          lesson_learned: string | null;
+          priority: Database["public"]["Enums"]["ca_priority"];
+          source: string;
+          source_id: string | null;
+          status: Database["public"]["Enums"]["improvement_status"];
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          actual_result?: string | null;
+          assigned_to?: string | null;
+          category: string;
+          completed_at?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deadline?: string | null;
+          description: string;
+          expected_benefit?: string | null;
+          id?: string;
+          lesson_learned?: string | null;
+          priority?: Database["public"]["Enums"]["ca_priority"];
+          source?: string;
+          source_id?: string | null;
+          status?: Database["public"]["Enums"]["improvement_status"];
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          actual_result?: string | null;
+          assigned_to?: string | null;
+          category?: string;
+          completed_at?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deadline?: string | null;
+          description?: string;
+          expected_benefit?: string | null;
+          id?: string;
+          lesson_learned?: string | null;
+          priority?: Database["public"]["Enums"]["ca_priority"];
+          source?: string;
+          source_id?: string | null;
+          status?: Database["public"]["Enums"]["improvement_status"];
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      management_reviews: {
+        Row: {
+          action_items: Json | null;
+          agenda: string;
+          attendees: Json | null;
+          created_at: string;
+          created_by: string | null;
+          decisions: Json | null;
+          id: string;
+          minutes: string | null;
+          period_from: string;
+          period_to: string;
+          review_date: string;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          action_items?: Json | null;
+          agenda: string;
+          attendees?: Json | null;
+          created_at?: string;
+          created_by?: string | null;
+          decisions?: Json | null;
+          id?: string;
+          minutes?: string | null;
+          period_from: string;
+          period_to: string;
+          review_date: string;
+          status?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          action_items?: Json | null;
+          agenda?: string;
+          attendees?: Json | null;
+          created_at?: string;
+          created_by?: string | null;
+          decisions?: Json | null;
+          id?: string;
+          minutes?: string | null;
+          period_from?: string;
+          period_to?: string;
+          review_date?: string;
+          status?: string;
+          title?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };
@@ -584,6 +695,7 @@ export type Database = {
       audit_finding_severity: "minor" | "major" | "critical" | "observation";
       audit_type: "internal" | "external" | "supplier";
       audit_status: "planned" | "in_progress" | "completed" | "overdue";
+      improvement_status: "proposed" | "approved" | "in_progress" | "completed" | "cancelled";
       nc_status: "open" | "in_progress" | "verified" | "closed";
       ca_priority: "low" | "medium" | "high" | "critical";
     };
@@ -719,6 +831,7 @@ export const Constants = {
       audit_finding_severity: ["minor", "major", "critical", "observation"],
       audit_type: ["internal", "external", "supplier"],
       audit_status: ["planned", "in_progress", "completed", "overdue"],
+      improvement_status: ["proposed", "approved", "in_progress", "completed", "cancelled"],
       nc_status: ["open", "in_progress", "verified", "closed"],
       ca_priority: ["low", "medium", "high", "critical"],
     },

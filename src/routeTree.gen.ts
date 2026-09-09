@@ -22,7 +22,9 @@ import { Route as MasterMejaRouteImport } from './routes/master.meja'
 import { Route as MasterPartRouteImport } from './routes/master.part'
 import { Route as MasterUsersRouteImport } from './routes/master.users'
 import { Route as QmsAuditRouteImport } from './routes/qms.audit'
+import { Route as QmsImprovementRouteImport } from './routes/qms.improvement'
 import { Route as QmsNcRouteImport } from './routes/qms.nc'
+import { Route as QmsReviewRouteImport } from './routes/qms.review'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -89,9 +91,19 @@ const QmsAuditRoute = QmsAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => QmsRoute,
 } as any)
+const QmsImprovementRoute = QmsImprovementRouteImport.update({
+  id: '/improvement',
+  path: '/improvement',
+  getParentRoute: () => QmsRoute,
+} as any)
 const QmsNcRoute = QmsNcRouteImport.update({
   id: '/nc',
   path: '/nc',
+  getParentRoute: () => QmsRoute,
+} as any)
+const QmsReviewRoute = QmsReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
   getParentRoute: () => QmsRoute,
 } as any)
 
@@ -109,7 +121,9 @@ export interface FileRoutesByFullPath {
   '/master/part': typeof MasterPartRoute
   '/master/users': typeof MasterUsersRoute
   '/qms/audit': typeof QmsAuditRoute
+  '/qms/improvement': typeof QmsImprovementRoute
   '/qms/nc': typeof QmsNcRoute
+  '/qms/review': typeof QmsReviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -125,7 +139,9 @@ export interface FileRoutesByTo {
   '/master/part': typeof MasterPartRoute
   '/master/users': typeof MasterUsersRoute
   '/qms/audit': typeof QmsAuditRoute
+  '/qms/improvement': typeof QmsImprovementRoute
   '/qms/nc': typeof QmsNcRoute
+  '/qms/review': typeof QmsReviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -142,7 +158,9 @@ export interface FileRoutesById {
   '/master/part': typeof MasterPartRoute
   '/master/users': typeof MasterUsersRoute
   '/qms/audit': typeof QmsAuditRoute
+  '/qms/improvement': typeof QmsImprovementRoute
   '/qms/nc': typeof QmsNcRoute
+  '/qms/review': typeof QmsReviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,7 +178,9 @@ export interface FileRouteTypes {
     | '/master/part'
     | '/master/users'
     | '/qms/audit'
+    | '/qms/improvement'
     | '/qms/nc'
+    | '/qms/review'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -176,7 +196,9 @@ export interface FileRouteTypes {
     | '/master/part'
     | '/master/users'
     | '/qms/audit'
+    | '/qms/improvement'
     | '/qms/nc'
+    | '/qms/review'
   id:
     | '__root__'
     | '/'
@@ -192,7 +214,9 @@ export interface FileRouteTypes {
     | '/master/part'
     | '/master/users'
     | '/qms/audit'
+    | '/qms/improvement'
     | '/qms/nc'
+    | '/qms/review'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -299,11 +323,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QmsAuditRouteImport
       parentRoute: typeof QmsRoute
     }
+    '/qms/improvement': {
+      id: '/qms/improvement'
+      path: '/improvement'
+      fullPath: '/qms/improvement'
+      preLoaderRoute: typeof QmsImprovementRouteImport
+      parentRoute: typeof QmsRoute
+    }
     '/qms/nc': {
       id: '/qms/nc'
       path: '/nc'
       fullPath: '/qms/nc'
       preLoaderRoute: typeof QmsNcRouteImport
+      parentRoute: typeof QmsRoute
+    }
+    '/qms/review': {
+      id: '/qms/review'
+      path: '/review'
+      fullPath: '/qms/review'
+      preLoaderRoute: typeof QmsReviewRouteImport
       parentRoute: typeof QmsRoute
     }
   }
@@ -328,12 +366,16 @@ const MasterRouteWithChildren =
 
 interface QmsRouteChildren {
   QmsAuditRoute: typeof QmsAuditRoute
+  QmsImprovementRoute: typeof QmsImprovementRoute
   QmsNcRoute: typeof QmsNcRoute
+  QmsReviewRoute: typeof QmsReviewRoute
 }
 
 const QmsRouteChildren: QmsRouteChildren = {
   QmsAuditRoute: QmsAuditRoute,
+  QmsImprovementRoute: QmsImprovementRoute,
   QmsNcRoute: QmsNcRoute,
+  QmsReviewRoute: QmsReviewRoute,
 }
 
 const QmsRouteWithChildren = QmsRoute._addFileChildren(QmsRouteChildren)

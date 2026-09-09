@@ -158,3 +158,92 @@ export function toggleChecklistItem(checklist: AuditChecklist, id: string): Audi
 export function removeChecklistItem(checklist: AuditChecklist, id: string): AuditChecklist {
   return { items: checklist.items.filter((it) => it.id !== id) };
 }
+
+export type ImprovementStatus = "proposed" | "approved" | "in_progress" | "completed" | "cancelled";
+export type ImprovementCategory = "quality" | "process" | "safety" | "efficiency" | "other";
+export type ReviewStatus = "draft" | "completed";
+
+export const IMPROVEMENT_STATUSES: ImprovementStatus[] = [
+  "proposed",
+  "approved",
+  "in_progress",
+  "completed",
+  "cancelled",
+];
+export const IMPROVEMENT_CATEGORIES: ImprovementCategory[] = [
+  "quality",
+  "process",
+  "safety",
+  "efficiency",
+  "other",
+];
+export const REVIEW_STATUSES: ReviewStatus[] = ["draft", "completed"];
+
+export const IMPROVEMENT_STATUS_LABEL: Record<ImprovementStatus, string> = {
+  proposed: "Proposed",
+  approved: "Approved",
+  in_progress: "In Progress",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
+export const IMPROVEMENT_CATEGORY_LABEL: Record<ImprovementCategory, string> = {
+  quality: "Quality",
+  process: "Process",
+  safety: "Safety",
+  efficiency: "Efficiency",
+  other: "Other",
+};
+
+export const REVIEW_STATUS_LABEL: Record<ReviewStatus, string> = {
+  draft: "Draft",
+  completed: "Completed",
+};
+
+export function improvementStatusVariant(status: ImprovementStatus): BadgeVariant {
+  switch (status) {
+    case "proposed":
+      return "info";
+    case "approved":
+      return "default";
+    case "in_progress":
+      return "warning";
+    case "completed":
+      return "success";
+    case "cancelled":
+      return "destructive";
+  }
+}
+
+/** Parse kolom JSONB list-string (attendees, decisions, action_items). */
+export function parseStringList(raw: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return raw
+      .filter((v): v is string => typeof v === "string")
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+  if (typeof raw === "string") {
+    return raw
+      .split("\n")
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+/** Ubah textarea satu-baris-per-item menjadi array untuk kolom JSONB. */
+export function linesToList(text: string): string[] {
+  return parseStringList(text);
+}
+
+export type CaPriority = "low" | "medium" | "high" | "critical";
+
+export const CA_PRIORITIES: CaPriority[] = ["low", "medium", "high", "critical"];
+
+export const CA_PRIORITY_LABEL: Record<CaPriority, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  critical: "Critical",
+};
