@@ -339,7 +339,7 @@ function LaporanPage() {
       details: [...detailsById.values()],
       year,
       month,
-      filterMesin: filters.meja ?? "",
+      filterMeja: filters.meja ?? "",
       filterKategori: "",
     });
     toast.success("Excel berhasil diexport");
@@ -353,7 +353,7 @@ function LaporanPage() {
       reports: sortedRows,
       year,
       month,
-      filterMesin: filters.meja ?? "",
+      filterMeja: filters.meja ?? "",
       filterKategori: "",
     });
     toast.success("PDF berhasil diexport");

@@ -40,10 +40,10 @@ export function exportLaporanPDF(opts: {
   reports: Report[];
   year: number;
   month: number;
-  filterMesin?: number | "";
+  filterMeja?: number | "";
   filterKategori?: string;
 }) {
-  const { reports, year, month, filterMesin, filterKategori } = opts;
+  const { reports, year, month, filterMeja, filterKategori } = opts;
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -70,7 +70,7 @@ export function exportLaporanPDF(opts: {
   doc.setFont("helvetica", "italic");
   doc.setTextColor(100, 116, 139);
   const meta = [
-    `Meja: ${filterMesin ? `Meja-${filterMesin}` : "Semua"}`,
+    `Meja: ${filterMeja ? `Meja-${filterMeja}` : "Semua"}`,
     `Kategori: ${filterKategori || "Semua"}`,
     `Total: ${reports.length} laporan`,
     `Dicetak: ${format(new Date(), "dd MMM yyyy HH:mm", { locale: idLocale })}`,

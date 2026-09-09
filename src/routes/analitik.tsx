@@ -432,7 +432,7 @@ function Analitik() {
         {(
           [
             ["overview", "Executive Summary"],
-            ["metrics", "Machine / Part / Shift"],
+            ["metrics", "Meja / Part / Shift"],
             ["deep-dive", "Defect & Insights"],
           ] as [Tab, string][]
         ).map(([key, label]) => (
@@ -688,7 +688,7 @@ function Analitik() {
               </Card>
 
               <Card>
-                <h3 className="text-sm font-semibold">Top Machine Metrics</h3>
+                <h3 className="text-sm font-semibold">Top Meja Metrics</h3>
                 <div className="mt-3 overflow-x-auto">
                   <table className="table-pro cardify w-full text-sm">
                     <thead>

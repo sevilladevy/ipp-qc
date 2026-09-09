@@ -37,10 +37,10 @@ export async function exportLaporanExcel(opts: {
   details: DefectDetail[];
   year: number;
   month: number;
-  filterMesin?: number | "";
+  filterMeja?: number | "";
   filterKategori?: string;
 }) {
-  const { reports, details, year, month, filterMesin, filterKategori } = opts;
+  const { reports, details, year, month, filterMeja, filterKategori } = opts;
 
   const wb = new ExcelJS.Workbook();
   wb.creator = "IPP Inspection System";
@@ -107,7 +107,7 @@ export async function exportLaporanExcel(opts: {
   ws.mergeCells(`A3:${lastColLetter}3`);
   const metaParts = [
     `Periode: ${format(new Date(year, month - 1), "MMMM yyyy", { locale: idLocale })}`,
-    `Meja: ${filterMesin ? `Meja-${filterMesin}` : "Semua"}`,
+    `Meja: ${filterMeja ? `Meja-${filterMeja}` : "Semua"}`,
     `Kategori: ${filterKategori || "Semua"}`,
     `Dicetak: ${format(new Date(), "dd MMM yyyy HH:mm", { locale: idLocale })}`,
   ];

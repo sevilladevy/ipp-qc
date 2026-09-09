@@ -228,7 +228,7 @@ function Dashboard() {
     const yieldAvg = qty_check > 0 ? ok / qty_check : 0;
     const ngRate = qty_check > 0 ? ng / qty_check : 0;
     const reportCount = filteredRows.length;
-    const activeMachines = new Set(filteredRows.map((row) => row.no_meja)).size;
+    const activeMejas = new Set(filteredRows.map((row) => row.no_meja)).size;
     return {
       qty_check,
       ok,
@@ -236,7 +236,7 @@ function Dashboard() {
       yieldAvg,
       ngRate,
       reportCount,
-      activeMachines,
+      activeMejas,
     };
   }, [filteredRows]);
 
@@ -649,7 +649,7 @@ function Dashboard() {
                 compact
                 label="Reports"
                 value={fmtNum(totals.reportCount)}
-                sub={`${totals.activeMachines} meja`}
+                sub={`${totals.activeMejas} meja`}
                 accent="info"
                 icon={<Activity className="h-3.5 w-3.5" />}
                 dataTestId="dashboard-kpi-reports"
@@ -658,7 +658,7 @@ function Dashboard() {
                 key="meja"
                 compact
                 label="Meja Aktif"
-                value={totals.activeMachines}
+                value={totals.activeMejas}
                 sub="periode ini"
                 accent="info"
                 icon={<Cog className="h-3.5 w-3.5" />}
