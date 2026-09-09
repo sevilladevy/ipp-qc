@@ -33,6 +33,12 @@ const NAV: NavItem[] = [
   { to: "/laporan", label: "Laporan", icon: ListChecks },
   { to: "/analitik", label: "Analitik", icon: BarChart3 },
   {
+    to: "/qms",
+    label: "QMS",
+    icon: AlertTriangle,
+    children: [{ to: "/qms/nc", label: "Non-Conformity", icon: Cog }],
+  },
+  {
     to: "/master",
     label: "Master",
     icon: Settings,

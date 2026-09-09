@@ -370,6 +370,114 @@ export type Database = {
         };
         Relationships: [];
       };
+      ca_actions: {
+        Row: {
+          action_type: string;
+          assigned_to: string | null;
+          completed_at: string | null;
+          created_at: string;
+          deadline: string | null;
+          description: string;
+          effectiveness_note: string | null;
+          effectiveness_rating: number | null;
+          id: string;
+          nc_id: string;
+          priority: Database["public"]["Enums"]["ca_priority"];
+        };
+        Insert: {
+          action_type: string;
+          assigned_to?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          deadline?: string | null;
+          description: string;
+          effectiveness_note?: string | null;
+          effectiveness_rating?: number | null;
+          id?: string;
+          nc_id: string;
+          priority?: Database["public"]["Enums"]["ca_priority"];
+        };
+        Update: {
+          action_type?: string;
+          assigned_to?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          deadline?: string | null;
+          description?: string;
+          effectiveness_note?: string | null;
+          effectiveness_rating?: number | null;
+          id?: string;
+          nc_id?: string;
+          priority?: Database["public"]["Enums"]["ca_priority"];
+        };
+        Relationships: [];
+      };
+      non_conformities: {
+        Row: {
+          assigned_to: string | null;
+          closure_note: string | null;
+          corrective_action: string | null;
+          created_at: string;
+          created_by: string | null;
+          deadline: string | null;
+          description: string;
+          id: string;
+          nc_number: string;
+          preventive_action: string | null;
+          root_cause: string | null;
+          root_cause_category: string | null;
+          severity: Database["public"]["Enums"]["audit_finding_severity"];
+          source: string;
+          source_id: string | null;
+          status: Database["public"]["Enums"]["nc_status"];
+          updated_at: string;
+          verified_at: string | null;
+          verified_by: string | null;
+        };
+        Insert: {
+          assigned_to?: string | null;
+          closure_note?: string | null;
+          corrective_action?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deadline?: string | null;
+          description: string;
+          id?: string;
+          nc_number: string;
+          preventive_action?: string | null;
+          root_cause?: string | null;
+          root_cause_category?: string | null;
+          severity?: Database["public"]["Enums"]["audit_finding_severity"];
+          source?: string;
+          source_id?: string | null;
+          status?: Database["public"]["Enums"]["nc_status"];
+          updated_at?: string;
+          verified_at?: string | null;
+          verified_by?: string | null;
+        };
+        Update: {
+          assigned_to?: string | null;
+          closure_note?: string | null;
+          corrective_action?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          deadline?: string | null;
+          description?: string;
+          id?: string;
+          nc_number?: string;
+          preventive_action?: string | null;
+          root_cause?: string | null;
+          root_cause_category?: string | null;
+          severity?: Database["public"]["Enums"]["audit_finding_severity"];
+          source?: string;
+          source_id?: string | null;
+          status?: Database["public"]["Enums"]["nc_status"];
+          updated_at?: string;
+          verified_at?: string | null;
+          verified_by?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -386,6 +494,9 @@ export type Database = {
     Enums: {
       app_role: "inspector" | "supervisor";
       inspection_shift: "A" | "B" | "C";
+      audit_finding_severity: "minor" | "major" | "critical" | "observation";
+      nc_status: "open" | "in_progress" | "verified" | "closed";
+      ca_priority: "low" | "medium" | "high" | "critical";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -516,6 +627,9 @@ export const Constants = {
     Enums: {
       app_role: ["inspector", "supervisor"],
       inspection_shift: ["A", "B", "C"],
+      audit_finding_severity: ["minor", "major", "critical", "observation"],
+      nc_status: ["open", "in_progress", "verified", "closed"],
+      ca_priority: ["low", "medium", "high", "critical"],
     },
   },
 } as const;

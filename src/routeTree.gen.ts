@@ -16,10 +16,12 @@ import { Route as InputRouteImport } from './routes/input'
 import { Route as LaporanRouteImport } from './routes/laporan'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MasterRouteImport } from './routes/master'
+import { Route as QmsRouteImport } from './routes/qms'
 import { Route as MasterDefectTypesRouteImport } from './routes/master.defect-types'
 import { Route as MasterMejaRouteImport } from './routes/master.meja'
 import { Route as MasterPartRouteImport } from './routes/master.part'
 import { Route as MasterUsersRouteImport } from './routes/master.users'
+import { Route as QmsNcRouteImport } from './routes/qms.nc'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -56,6 +58,11 @@ const MasterRoute = MasterRouteImport.update({
   path: '/master',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QmsRoute = QmsRouteImport.update({
+  id: '/qms',
+  path: '/qms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MasterDefectTypesRoute = MasterDefectTypesRouteImport.update({
   id: '/defect-types',
   path: '/defect-types',
@@ -76,6 +83,11 @@ const MasterUsersRoute = MasterUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => MasterRoute,
 } as any)
+const QmsNcRoute = QmsNcRouteImport.update({
+  id: '/nc',
+  path: '/nc',
+  getParentRoute: () => QmsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -85,10 +97,12 @@ export interface FileRoutesByFullPath {
   '/laporan': typeof LaporanRoute
   '/login': typeof LoginRoute
   '/master': typeof MasterRouteWithChildren
+  '/qms': typeof QmsRouteWithChildren
   '/master/defect-types': typeof MasterDefectTypesRoute
   '/master/meja': typeof MasterMejaRoute
   '/master/part': typeof MasterPartRoute
   '/master/users': typeof MasterUsersRoute
+  '/qms/nc': typeof QmsNcRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -98,10 +112,12 @@ export interface FileRoutesByTo {
   '/laporan': typeof LaporanRoute
   '/login': typeof LoginRoute
   '/master': typeof MasterRouteWithChildren
+  '/qms': typeof QmsRouteWithChildren
   '/master/defect-types': typeof MasterDefectTypesRoute
   '/master/meja': typeof MasterMejaRoute
   '/master/part': typeof MasterPartRoute
   '/master/users': typeof MasterUsersRoute
+  '/qms/nc': typeof QmsNcRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -112,10 +128,12 @@ export interface FileRoutesById {
   '/laporan': typeof LaporanRoute
   '/login': typeof LoginRoute
   '/master': typeof MasterRouteWithChildren
+  '/qms': typeof QmsRouteWithChildren
   '/master/defect-types': typeof MasterDefectTypesRoute
   '/master/meja': typeof MasterMejaRoute
   '/master/part': typeof MasterPartRoute
   '/master/users': typeof MasterUsersRoute
+  '/qms/nc': typeof QmsNcRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,10 +145,12 @@ export interface FileRouteTypes {
     | '/laporan'
     | '/login'
     | '/master'
+    | '/qms'
     | '/master/defect-types'
     | '/master/meja'
     | '/master/part'
     | '/master/users'
+    | '/qms/nc'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -140,10 +160,12 @@ export interface FileRouteTypes {
     | '/laporan'
     | '/login'
     | '/master'
+    | '/qms'
     | '/master/defect-types'
     | '/master/meja'
     | '/master/part'
     | '/master/users'
+    | '/qms/nc'
   id:
     | '__root__'
     | '/'
@@ -153,10 +175,12 @@ export interface FileRouteTypes {
     | '/laporan'
     | '/login'
     | '/master'
+    | '/qms'
     | '/master/defect-types'
     | '/master/meja'
     | '/master/part'
     | '/master/users'
+    | '/qms/nc'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -167,6 +191,7 @@ export interface RootRouteChildren {
   LaporanRoute: typeof LaporanRoute
   LoginRoute: typeof LoginRoute
   MasterRoute: typeof MasterRouteWithChildren
+  QmsRoute: typeof QmsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -220,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MasterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/qms': {
+      id: '/qms'
+      path: '/qms'
+      fullPath: '/qms'
+      preLoaderRoute: typeof QmsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/master/defect-types': {
       id: '/master/defect-types'
       path: '/defect-types'
@@ -248,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MasterUsersRouteImport
       parentRoute: typeof MasterRoute
     }
+    '/qms/nc': {
+      id: '/qms/nc'
+      path: '/nc'
+      fullPath: '/qms/nc'
+      preLoaderRoute: typeof QmsNcRouteImport
+      parentRoute: typeof QmsRoute
+    }
   }
 }
 
@@ -268,6 +307,16 @@ const MasterRouteChildren: MasterRouteChildren = {
 const MasterRouteWithChildren =
   MasterRoute._addFileChildren(MasterRouteChildren)
 
+interface QmsRouteChildren {
+  QmsNcRoute: typeof QmsNcRoute
+}
+
+const QmsRouteChildren: QmsRouteChildren = {
+  QmsNcRoute: QmsNcRoute,
+}
+
+const QmsRouteWithChildren = QmsRoute._addFileChildren(QmsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalitikRoute: AnalitikRoute,
@@ -276,6 +325,7 @@ const rootRouteChildren: RootRouteChildren = {
   LaporanRoute: LaporanRoute,
   LoginRoute: LoginRoute,
   MasterRoute: MasterRouteWithChildren,
+  QmsRoute: QmsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { endOfMonth, format, startOfMonth, subDays } from "date-fns";
@@ -95,6 +95,7 @@ function LaporanPage() {
 
   const { role, user } = useAuth();
   const canDelete = isPrivilegedUser(role, user?.email);
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [presets, setPresets] = useState<ReportPreset[]>(() => readPresets());
@@ -900,6 +901,25 @@ function LaporanPage() {
                                   row.qty_check > 0 ? (row.total_ok ?? 0) / row.qty_check : 0,
                                 )}
                               </p>
+                              {canDelete && (
+                                <button
+                                  type="button"
+                                  className="tag mt-2"
+                                  onClick={() =>
+                                    navigate({
+                                      to: "/qms/nc",
+                                      search: {
+                                        create: "1",
+                                        source: "daily_qc",
+                                        sourceId: row.id,
+                                        description: `Laporan ${fmtDate(row.report_date)} Shift ${row.shift} — Meja ${row.no_meja} — ${row.part_no} ${row.part_name} (NG ${fmtNum(row.total_ng)}/${fmtNum(row.qty_check)})`,
+                                      },
+                                    })
+                                  }
+                                >
+                                  Buat NC dari laporan ini
+                                </button>
+                              )}
                             </td>
                           </tr>
                         )}
