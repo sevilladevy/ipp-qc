@@ -170,7 +170,10 @@ const run = async () => {
   if (partsError) throw partsError;
 
   const ownerId = await resolveOwnerId();
-  const reportsToInsert = reports.map(({ _sortKey, ...rest }) => ({ ...rest, created_by: ownerId }));
+  const reportsToInsert = reports.map(({ _sortKey, ...rest }) => ({
+    ...rest,
+    created_by: ownerId,
+  }));
   const { error: reportsError } = await supabase.from("inspection_reports").insert(reportsToInsert);
   if (reportsError) throw reportsError;
 
