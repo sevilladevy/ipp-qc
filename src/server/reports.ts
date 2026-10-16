@@ -25,7 +25,6 @@ type ReportInsert = TablesInsert<"inspection_reports">;
 type ReportContext = {
   supabase: SupabaseClient<Database>;
   userId: string;
-  demoMode?: boolean;
 };
 
 function validateInput(input: InputPayload): void {
@@ -44,7 +43,7 @@ function validateInput(input: InputPayload): void {
 
 export const saveInspectionReport = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
-  .inputValidator((input: InputPayload) => {
+  .validator((input: InputPayload) => {
     validateInput(input);
     // Validate defects keys are known or extra, values are reasonable
     const validKeys = new Set<string>(Object.keys(KODE_TO_COLUMN));
@@ -188,7 +187,7 @@ type UpdatePayload = {
 
 export const updateInspectionReport = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
-  .inputValidator((input: UpdatePayload) => {
+  .validator((input: UpdatePayload) => {
     if (!input.id?.trim()) {
       throw new Response("ID laporan tidak ditemukan", { status: 400 });
     }
@@ -255,7 +254,7 @@ export const updateInspectionReport = createServerFn({ method: "POST" })
 
 export const deleteInspectionReport = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
-  .inputValidator((input: { id: string }) => {
+  .validator((input: { id: string }) => {
     if (!input.id?.trim()) throw new Response("ID laporan tidak ditemukan", { status: 400 });
     return input;
   })

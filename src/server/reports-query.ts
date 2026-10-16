@@ -17,7 +17,7 @@ type GetReportsInput = {
 
 export const getReports = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
-  .inputValidator((input: GetReportsInput) => {
+  .validator((input: GetReportsInput) => {
     if (!input.from || !input.to) {
       throw new Response("Date range required", { status: 400 });
     }

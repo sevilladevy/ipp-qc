@@ -124,7 +124,7 @@ export const listUsers = createServerFn({ method: "POST" })
 
 export const inviteUser = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (input: {
       email: string;
       password: string;
@@ -176,7 +176,7 @@ export const inviteUser = createServerFn({ method: "POST" })
 
 export const promoteToSupervisor = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
-  .inputValidator((input: { userId: string }) => {
+  .validator((input: { userId: string }) => {
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!input.userId || !uuidRegex.test(input.userId)) {
@@ -206,7 +206,7 @@ export const promoteToSupervisor = createServerFn({ method: "POST" })
 
 export const deleteUser = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
-  .inputValidator((input: { userId: string }) => {
+  .validator((input: { userId: string }) => {
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!input.userId || !uuidRegex.test(input.userId)) {
