@@ -2,6 +2,12 @@
 @source "../src";
 @import "tw-animate-css";
 @import "./pages-theme.css";
+/* Self-hosted Inter (CSP-compliant: font files served from own origin) */
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/inter/800.css";
 
 @custom-variant dark (&:is(.dark *));
 

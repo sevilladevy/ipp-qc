@@ -9,17 +9,70 @@ export type NcUpdate = TablesUpdate<"non_conformities">;
 
 export const NC_QUERY_KEY = ["non_conformities"] as const;
 
+// ---------------------------------------------------------------------------
+// Graceful handling of "table not yet created on the deployed database" (404).
+// The QMS tables are materialised by the `init_qms_schema()` function in
+// supabase/migrations/20261016000002_qms_schema_bootstrap.sql. Until that
+// migration has been applied, every SELECT against those tables fails with a
+// PostgREST 404. Rather than letting React Query's default retry policy spam
+// the network/console, detect this specific failure class, log ONE console
+// warning, and resolve the query with an empty array.
+// ---------------------------------------------------------------------------
+
+function isMissingTableError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const e = error as { code?: string; message?: string };
+  // PostgREST "Could not find the relation" error code
+  if (e.code === "PGRST204") return true;
+  // Defensive: some adapters surface the HTTP status in the message
+  if (typeof e.message === "string" && /PGRST204|relation .* does not exist/i.test(e.message))
+    return true;
+  return false;
+}
+
+let warnedMissingTables = false;
+
+function warnOnce(table: string, error: unknown) {
+  if (warnedMissingTables) return;
+  warnedMissingTables = true;
+  console.warn(
+    `[QMS] Tabel "${table}" belum tersedia di database (404). ` +
+      "Jalankan inisialisasi skema QMS (initQmsSchema) atau migrasi 20261016000002_qms_schema_bootstrap.sql.",
+    error,
+  );
+}
+
+/**
+ * Runs a QMS table query; if it fails specifically because the table doesn't
+ * exist yet, logs a single warning and returns `[]`. Any other error is
+ * rethrown so React Query handles it normally (with its default retry policy).
+ */
+async function fetchQmsTable<T>(
+  table: string,
+  run: () => Promise<{ data: T[] | null; error: unknown }>,
+): Promise<T[]> {
+  const { data, error } = await run();
+  if (error) {
+    if (isMissingTableError(error)) {
+      warnOnce(table, error);
+      return [];
+    }
+    throw error;
+  }
+  return data ?? [];
+}
+
 export function useNonConformities() {
   return useQuery({
     queryKey: NC_QUERY_KEY,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("non_conformities")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as NonConformity[];
-    },
+    queryFn: () =>
+      fetchQmsTable("non_conformities", async () => {
+        const { data, error } = await supabase
+          .from("non_conformities")
+          .select("*")
+          .order("created_at", { ascending: false });
+        return { data: data as NonConformity[] | null, error };
+      }),
     staleTime: 30_000,
   });
 }
@@ -41,7 +94,13 @@ async function existingNumbers(prefix: string): Promise<string[]> {
     .from("non_conformities")
     .select("nc_number")
     .like("nc_number", `${prefix}%`);
-  if (error) throw error;
+  if (error) {
+    // Table missing → no existing numbers; safe to treat as an empty list so
+    // createNc can still generate a candidate number (the subsequent INSERT
+    // will surface the real "table missing" error to the caller).
+    if (isMissingTableError(error)) return [];
+    throw error;
+  }
   return (data ?? []).map((r) => r.nc_number);
 }
 
@@ -120,14 +179,14 @@ export const auditFindingsKey = (auditId: string | null) => ["audit_findings", a
 export function useAuditSchedules() {
   return useQuery({
     queryKey: AUDIT_QUERY_KEY,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("audit_schedules")
-        .select("*")
-        .order("planned_date", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as AuditSchedule[];
-    },
+    queryFn: () =>
+      fetchQmsTable("audit_schedules", async () => {
+        const { data, error } = await supabase
+          .from("audit_schedules")
+          .select("*")
+          .order("planned_date", { ascending: true });
+        return { data: data as AuditSchedule[] | null, error };
+      }),
     staleTime: 30_000,
   });
 }
@@ -135,16 +194,17 @@ export function useAuditSchedules() {
 export function useAuditFindings(auditId: string | null) {
   return useQuery({
     queryKey: auditFindingsKey(auditId),
-    queryFn: async () => {
-      if (!auditId) return [] as AuditFinding[];
-      const { data, error } = await supabase
-        .from("audit_findings")
-        .select("*")
-        .eq("audit_id", auditId)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as AuditFinding[];
-    },
+    queryFn: () =>
+      auditId == null
+        ? Promise.resolve([] as AuditFinding[])
+        : fetchQmsTable("audit_findings", async () => {
+            const { data, error } = await supabase
+              .from("audit_findings")
+              .select("*")
+              .eq("audit_id", auditId)
+              .order("created_at", { ascending: true });
+            return { data: data as AuditFinding[] | null, error };
+          }),
     enabled: auditId != null,
     staleTime: 30_000,
   });
@@ -210,7 +270,7 @@ export function useAuditMutations() {
       .single();
     if (error) throw error;
     invalidate(auditId);
-    return data as AuditFinding;
+    return data;
   }
 
   async function deleteFinding(id: string, auditId: string): Promise<void> {
@@ -243,14 +303,14 @@ export const REVIEW_QUERY_KEY = ["management_reviews"] as const;
 export function useImprovements() {
   return useQuery({
     queryKey: IMPROVEMENT_QUERY_KEY,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("improvements")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Improvement[];
-    },
+    queryFn: () =>
+      fetchQmsTable("improvements", async () => {
+        const { data, error } = await supabase
+          .from("improvements")
+          .select("*")
+          .order("created_at", { ascending: false });
+        return { data: data as Improvement[] | null, error };
+      }),
     staleTime: 30_000,
   });
 }
@@ -258,14 +318,14 @@ export function useImprovements() {
 export function useManagementReviews() {
   return useQuery({
     queryKey: REVIEW_QUERY_KEY,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("management_reviews")
-        .select("*")
-        .order("review_date", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as ManagementReview[];
-    },
+    queryFn: () =>
+      fetchQmsTable("management_reviews", async () => {
+        const { data, error } = await supabase
+          .from("management_reviews")
+          .select("*")
+          .order("review_date", { ascending: false });
+        return { data: data as ManagementReview[] | null, error };
+      }),
     staleTime: 30_000,
   });
 }

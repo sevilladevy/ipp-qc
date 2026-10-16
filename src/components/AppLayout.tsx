@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { APP_VERSION, STORAGE_KEYS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { QmsInitBanner } from "@/components/QmsInitBanner";
 
 interface NavItem {
   to: string;
@@ -173,6 +174,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </header>
 
         <main className="relative z-10 flex-1 p-3 pb-16 sm:px-4 sm:pb-16 sm:pt-4 lg:pb-4">
+          {location.pathname.startsWith("/qms") && <QmsInitBanner />}
           {children}
         </main>
       </div>
