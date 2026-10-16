@@ -1,20 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { endOfMonth, format, startOfMonth, subDays } from "date-fns";
-import { Download, Eye, FileText, Presentation, Search, Trash2 } from "lucide-react";
+import { Download, FileText, Presentation } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { isPrivilegedUser, useAuth } from "@/lib/auth";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { AppLayout } from "@/components/AppLayout";
-import {
-  DataTablePagination,
-  DataTableShell,
-  DataTableState,
-  SortableHeader,
-} from "@/components/data-table";
-import { Badge, EmptyState, PageHeader, Skeleton } from "@/components/ui-kit";
+import { PageHeader } from "@/components/ui-kit";
 import { sanitizeDateRange } from "@/lib/date-range";
 import { STORAGE_KEYS } from "@/lib/constants";
 import { fmtDate, fmtNum, fmtPct } from "@/lib/format";
@@ -23,13 +17,13 @@ import {
   applyManagementFilters,
   buildProfileLookup,
   enrichReports,
-  formatValidationIssue,
   type AggregatedReportRow,
   type EnrichedReport,
   type ManagementFilters,
 } from "@/lib/management";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchDefectDetailsByReportIds, REPORT_COLUMNS } from "@/lib/supabase-queries";
+import { LaporanFilterBar, LaporanTable } from "@/components/laporan";
 
 export const Route = createFileRoute("/laporan")({
   component: () => (
@@ -159,6 +153,12 @@ function LaporanPage() {
     return [...map.entries()].map(([id, name]) => ({ id, name }));
   }, [allRows]);
 
+  const allParts = useMemo(
+    () =>
+      [...new Set(allRows.map((row) => row.part_name))].sort((a, b) => a.localeCompare(b, "id")),
+    [allRows],
+  );
+
   const filteredRows = useMemo(() => {
     const base = applyManagementFilters(allRows, { ...filters, ...safeDateRange });
     const keyword = search.trim().toLowerCase();
@@ -199,7 +199,6 @@ function LaporanPage() {
   const pageEnd = page * pageSize;
   const pageGroupedRows = groupedRows.slice(pageStart, pageEnd);
   const pageDetailRows = sortedRows.slice(pageStart, pageEnd);
-  const hasPageRows = isGrouped ? pageGroupedRows.length > 0 : pageDetailRows.length > 0;
 
   useEffect(() => {
     setPage(1);
@@ -456,493 +455,62 @@ function LaporanPage() {
         </button>
       </PageHeader>
 
-      <DataTableShell
-        className="mb-4"
-        title="Templates & Advanced Filters"
-        toolbar={
-          <div className="grid w-full gap-3">
-            <div className="flex flex-wrap gap-2">
-              <button className="tag" onClick={() => applyTemplate("daily")}>
-                Daily
-              </button>
-              <button className="tag" onClick={() => applyTemplate("weekly")}>
-                Weekly
-              </button>
-              <button className="tag" onClick={() => applyTemplate("monthly")}>
-                Monthly
-              </button>
-              <button className="tag" onClick={() => applyTemplate("meja")}>
-                Meja Inspeksi
-              </button>
-              <button className="tag" onClick={() => applyTemplate("part")}>
-                Part
-              </button>
-              <button className="tag" onClick={() => applyTemplate("defect")}>
-                Defect Focus
-              </button>
-            </div>
-            <div className="grid gap-3 md:grid-cols-4 lg:grid-cols-8">
-              <input
-                type="date"
-                value={filters.from}
-                max={filters.to}
-                aria-label="Tanggal mulai"
-                onChange={(event) => setFilters((prev) => ({ ...prev, from: event.target.value }))}
-                className="ipt2"
-              />
-              <input
-                type="date"
-                value={filters.to}
-                min={filters.from}
-                aria-label="Tanggal selesai"
-                onChange={(event) => setFilters((prev) => ({ ...prev, to: event.target.value }))}
-                className="ipt2"
-              />
-              <select
-                aria-label="Filter meja"
-                value={filters.meja}
-                onChange={(event) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    meja: event.target.value ? Number(event.target.value) : "",
-                  }))
-                }
-                className="ipt2"
-              >
-                <option value="">Semua meja</option>
-                {mejaOptions.map((meja) => (
-                  <option key={meja} value={meja}>
-                    Meja {meja}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={filters.shift}
-                aria-label="Filter shift"
-                onChange={(event) => setFilters((prev) => ({ ...prev, shift: event.target.value }))}
-                className="ipt2"
-              >
-                <option value="">Semua shift</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-              </select>
-              <input
-                value={filters.part}
-                onChange={(event) => setFilters((prev) => ({ ...prev, part: event.target.value }))}
-                placeholder="Part"
-                aria-label="Filter part"
-                list="laporan-part-options"
-                className="ipt2"
-              />
-              <datalist id="laporan-part-options">
-                {[...new Set(allRows.map((row) => row.part_name))].map((part) => (
-                  <option key={part} value={part} />
-                ))}
-              </datalist>
-              <select
-                aria-label="Filter inspector"
-                value={filters.inspectorId}
-                onChange={(event) =>
-                  setFilters((prev) => ({ ...prev, inspectorId: event.target.value }))
-                }
-                className="ipt2"
-              >
-                <option value="">Semua inspector</option>
-                {inspectorOptions.map((inspector) => (
-                  <option key={inspector.id} value={inspector.id}>
-                    {inspector.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={1}
-                placeholder="Min pass rate %"
-                aria-label="Filter minimum pass rate persen"
-                value={filters.minYield != null ? Math.round(filters.minYield * 100) : ""}
-                onChange={(event) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    minYield: event.target.value ? Number(event.target.value) / 100 : undefined,
-                  }))
-                }
-                className="ipt2"
-              />
-              <label className="flex h-10 items-center gap-2 rounded border border-input px-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={!!filters.onlyInvalid}
-                  onChange={(event) =>
-                    setFilters((prev) => ({ ...prev, onlyInvalid: event.target.checked }))
-                  }
-                />
-                Hanya invalid
-              </label>
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              <label className="relative">
-                <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setPage(1);
-                  }}
-                  placeholder="Search part/inspector/meja..."
-                  aria-label="Cari laporan"
-                  className="ipt2 pl-8"
-                />
-              </label>
-              <select
-                value={groupBy}
-                aria-label="Kelompokkan laporan"
-                onChange={(event) => {
-                  setGroupBy(event.target.value as GroupBy);
-                  setPage(1);
-                }}
-                className="ipt2"
-              >
-                <option value="none">Tanpa grouping</option>
-                <option value="report_date">Group by tanggal</option>
-                <option value="shift">Group by shift</option>
-                <option value="no_meja">Group by meja</option>
-                <option value="part_name">Group by part</option>
-              </select>
-              <div className="flex gap-2">
-                <input
-                  className="ipt2"
-                  value={presetName}
-                  onChange={(event) => setPresetName(event.target.value)}
-                  placeholder="Nama preset"
-                  aria-label="Nama preset baru"
-                />
-                <button className="btn2" onClick={savePreset}>
-                  Save
-                </button>
-              </div>
-            </div>
-            {presets.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {presets.map((preset) => (
-                  <div key={preset.id} className="preset-chip">
-                    <button className="preset-chip-name" onClick={() => loadPreset(preset.id)}>
-                      {preset.name}
-                    </button>
-                    <button
-                      className="preset-chip-remove"
-                      onClick={() => removePreset(preset.id)}
-                      aria-label={`Hapus preset ${preset.name}`}
-                    >
-                      x
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+      <LaporanFilterBar
+        filters={filters}
+        setFilters={setFilters}
+        search={search}
+        setSearch={setSearch}
+        groupBy={groupBy}
+        setGroupBy={setGroupBy}
+        presets={presets.map((p) => ({ id: p.id, name: p.name }))}
+        presetName={presetName}
+        setPresetName={setPresetName}
+        onSavePreset={savePreset}
+        onLoadPreset={loadPreset}
+        onRemovePreset={removePreset}
+        mejaOptions={mejaOptions}
+        inspectorOptions={inspectorOptions}
+        allParts={allParts}
+        onTemplate={applyTemplate}
+      />
+
+      <LaporanTable
+        isGrouped={isGrouped}
+        totalRows={totalRows}
+        totalPages={totalPages}
+        page={page}
+        pageSize={pageSize}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        pageGroupedRows={pageGroupedRows}
+        pageDetailRows={pageDetailRows}
+        expanded={expanded}
+        canDelete={canDelete}
+        deletingId={deletingId}
+        user={user}
+        queryLoading={reportsQuery.isLoading}
+        queryError={reportsQuery.error}
+        onRefetch={() => reportsQuery.refetch()}
+        onSort={toggleSort}
+        onToggleExpand={(id) => setExpanded((p) => ({ ...p, [id]: !p[id] }))}
+        onDelete={handleDelete}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPageSize(size);
+          setPage(1);
+        }}
+        onNavigateNC={(row) =>
+          navigate({
+            to: "/qms/nc",
+            search: {
+              create: "1",
+              source: "daily_qc",
+              sourceId: row.id,
+              description: `Laporan ${fmtDate(row.report_date)} Shift ${row.shift} — Meja ${row.no_meja} — ${row.part_no} ${row.part_name} (NG ${fmtNum(row.total_ng)}/${fmtNum(row.qty_check)})`,
+            },
+          })
         }
-      >
-        {reportsQuery.isLoading ? (
-          <div className="p-4">
-            <Skeleton className="h-64" />
-          </div>
-        ) : reportsQuery.isError ? (
-          <DataTableState
-            tone="error"
-            title="Gagal memuat laporan"
-            description={
-              reportsQuery.error instanceof Error
-                ? reportsQuery.error.message
-                : "Terjadi kesalahan."
-            }
-            action={
-              <button
-                type="button"
-                onClick={() => reportsQuery.refetch()}
-                disabled={reportsQuery.isFetching}
-                className="btn2"
-              >
-                Coba lagi
-              </button>
-            }
-          />
-        ) : !hasPageRows ? (
-          <div className="p-6">
-            <EmptyState
-              title="Tidak ada data report"
-              description="Ubah filter atau template laporan."
-            />
-          </div>
-        ) : isGrouped ? (
-          <>
-            <div className="overflow-x-auto">
-              <table className="table-pro cardify w-full text-sm">
-                <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2 text-left">Group</th>
-                    <th className="px-3 py-2 text-right">Reports</th>
-                    <th className="px-3 py-2 text-right">Qty Check</th>
-                    <th className="px-3 py-2 text-right">OK</th>
-                    <th className="px-3 py-2 text-right">NG</th>
-                    <th className="px-3 py-2 text-right">Pass Rate</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageGroupedRows.map((row) => (
-                    <tr key={row.key}>
-                      <td data-label="Group" className="px-3 py-2 font-medium">
-                        {row.key}
-                      </td>
-                      <td data-label="Reports" className="px-3 py-2 text-right">
-                        {fmtNum(row.reports)}
-                      </td>
-                      <td data-label="Qty Check" className="px-3 py-2 text-right">
-                        {fmtNum(row.qty_check)}
-                      </td>
-                      <td data-label="OK" className="px-3 py-2 text-right text-success">
-                        {fmtNum(row.ok)}
-                      </td>
-                      <td data-label="NG" className="px-3 py-2 text-right text-destructive">
-                        {fmtNum(row.ng)}
-                      </td>
-                      <td data-label="Pass Rate" className="px-3 py-2 text-right">
-                        {fmtPct(row.passRate)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <DataTablePagination
-              page={page}
-              totalPages={totalPages}
-              totalRows={totalRows}
-              pageSize={pageSize}
-              onPageSizeChange={(size) => {
-                setPageSize(size);
-                setPage(1);
-              }}
-              onPageChange={setPage}
-            />
-          </>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="table-pro cardify w-full text-sm">
-                <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-3 text-left">No</th>
-                    <th className="px-3 py-3 text-left">
-                      <SortableHeader
-                        label="Tanggal"
-                        active={sortKey === "report_date"}
-                        direction={sortDir}
-                        onClick={() => toggleSort("report_date")}
-                      />
-                    </th>
-                    <th className="px-3 py-3 text-left">
-                      <SortableHeader
-                        label="Shift"
-                        active={sortKey === "shift"}
-                        direction={sortDir}
-                        onClick={() => toggleSort("shift")}
-                      />
-                    </th>
-                    <th className="px-3 py-3 text-left">
-                      <SortableHeader
-                        label="Meja"
-                        active={sortKey === "no_meja"}
-                        direction={sortDir}
-                        onClick={() => toggleSort("no_meja")}
-                      />
-                    </th>
-                    <th className="px-3 py-3 text-left">
-                      <SortableHeader
-                        label="Part"
-                        active={sortKey === "part_name"}
-                        direction={sortDir}
-                        onClick={() => toggleSort("part_name")}
-                      />
-                    </th>
-                    <th className="px-3 py-3 text-right">
-                      <SortableHeader
-                        label="Qty Check"
-                        active={sortKey === "qty_check"}
-                        direction={sortDir}
-                        onClick={() => toggleSort("qty_check")}
-                        align="right"
-                      />
-                    </th>
-                    <th className="px-3 py-3 text-right">OK</th>
-                    <th className="px-3 py-3 text-right">NG</th>
-                    <th className="px-3 py-3 text-left">Validation</th>
-                    <th className="px-3 py-3 text-left">Inspector</th>
-                    <th className="px-3 py-3 text-center">Expand</th>
-                    {canDelete && <th className="px-3 py-3 text-center">Delete</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageDetailRows.map((row, index) => {
-                    const detail = detailsById.get(row.id);
-                    const isOpen = !!expanded[row.id];
-                    const rowTone =
-                      row.validation.status === "critical"
-                        ? "bg-destructive/5"
-                        : row.validation.status === "warning"
-                          ? "bg-warning/10"
-                          : "";
-                    return (
-                      <Fragment key={row.id}>
-                        <tr key={row.id} className={rowTone}>
-                          <td data-label="No" className="px-3 py-2.5 text-muted-foreground">
-                            {(page - 1) * pageSize + index + 1}
-                          </td>
-                          <td data-label="Tanggal" className="px-3 py-2.5">
-                            {fmtDate(row.report_date)}
-                          </td>
-                          <td data-label="Shift" className="px-3 py-2.5">
-                            <Badge variant="info">{row.shift}</Badge>
-                          </td>
-                          <td data-label="Meja" className="px-3 py-2.5 font-medium">
-                            Meja Inspeksi {row.no_meja}
-                          </td>
-                          <td data-label="Part" className="px-3 py-2.5">
-                            <span className="font-medium">{row.part_name}</span>
-                          </td>
-                          <td data-label="Qty Check" className="px-3 py-2.5 text-right">
-                            {fmtNum(row.qty_check)}
-                          </td>
-                          <td data-label="OK" className="px-3 py-2.5 text-right text-success">
-                            {fmtNum(row.total_ok)}
-                          </td>
-                          <td data-label="NG" className="px-3 py-2.5 text-right text-destructive">
-                            {fmtNum(row.total_ng)}
-                          </td>
-                          <td data-label="Validasi" className="px-3 py-2.5">
-                            <Badge
-                              variant={
-                                row.validation.status === "good"
-                                  ? "success"
-                                  : row.validation.status === "warning"
-                                    ? "warning"
-                                    : "destructive"
-                              }
-                            >
-                              {row.validation.score} ({row.validation.status})
-                            </Badge>
-                          </td>
-                          <td data-label="Inspector" className="px-3 py-2.5 text-xs">
-                            {row.inspector_name}
-                          </td>
-                          <td data-label="Aksi" className="px-3 py-2.5 text-center">
-                            <button
-                              className="inline-flex rounded p-1.5 text-info hover:bg-info/10 min-h-[44px] min-w-[44px]"
-                              onClick={() =>
-                                setExpanded((prev) => ({ ...prev, [row.id]: !prev[row.id] }))
-                              }
-                              title="Expand row"
-                              aria-label="Tampilkan detail baris"
-                              aria-expanded={isOpen}
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </button>
-                          </td>
-                          {canDelete && (
-                            <td data-label="Hapus" className="px-3 py-2.5 text-center">
-                              <button
-                                type="button"
-                                onClick={() => setConfirmDelete(row)}
-                                disabled={deletingId === row.id}
-                                className="inline-flex rounded p-1.5 text-destructive hover:bg-destructive/10 disabled:opacity-40 min-h-[44px] min-w-[44px]"
-                                title="Hapus laporan"
-                                aria-label={`Hapus laporan Meja ${row.no_meja} ${row.report_date}`}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </td>
-                          )}
-                        </tr>
-                        {isOpen && (
-                          <tr key={`${row.id}-expanded`} className="card-expand bg-muted/30">
-                            <td
-                              data-label="Validation detail"
-                              colSpan={canDelete ? 12 : 11}
-                              className="card-full px-4 py-3 text-xs"
-                            >
-                              <p className="font-semibold">Validation details</p>
-                              {row.validation.issues.length === 0 ? (
-                                <p className="text-success">Data valid - tidak ada issue.</p>
-                              ) : (
-                                <ul className="mt-1 list-disc pl-4 text-muted-foreground">
-                                  {row.validation.issues.map((issue) => (
-                                    <li key={issue}>{formatValidationIssue(issue)}</li>
-                                  ))}
-                                </ul>
-                              )}
-                              {detail &&
-                                typeof detail.extra_defects === "object" &&
-                                detail.extra_defects !== null &&
-                                !Array.isArray(detail.extra_defects) && (
-                                  <p className="mt-2 text-muted-foreground">
-                                    Defect detail terisi. Extra defects:{" "}
-                                    {
-                                      Object.keys(detail.extra_defects as Record<string, number>)
-                                        .length
-                                    }
-                                  </p>
-                                )}
-                              <p className="mt-1 text-muted-foreground">
-                                Qty Check: {fmtNum(row.qty_check)} | OK: {fmtNum(row.total_ok)} |
-                                NG: {fmtNum(row.total_ng)} | Pass Rate:{" "}
-                                {fmtPct(
-                                  row.qty_check > 0 ? (row.total_ok ?? 0) / row.qty_check : 0,
-                                )}
-                              </p>
-                              {user && (
-                                <button
-                                  type="button"
-                                  className="tag mt-2"
-                                  onClick={() =>
-                                    navigate({
-                                      to: "/qms/nc",
-                                      search: {
-                                        create: "1",
-                                        source: "daily_qc",
-                                        sourceId: row.id,
-                                        description: `Laporan ${fmtDate(row.report_date)} Shift ${row.shift} — Meja ${row.no_meja} — ${row.part_no} ${row.part_name} (NG ${fmtNum(row.total_ng)}/${fmtNum(row.qty_check)})`,
-                                      },
-                                    })
-                                  }
-                                >
-                                  Buat NC dari laporan ini
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        )}
-                      </Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <DataTablePagination
-              page={page}
-              totalPages={totalPages}
-              totalRows={totalRows}
-              pageSize={pageSize}
-              onPageSizeChange={(size) => {
-                setPageSize(size);
-                setPage(1);
-              }}
-              onPageChange={setPage}
-            />
-          </>
-        )}
-      </DataTableShell>
+      />
 
       <ConfirmModal
         open={confirmDelete !== null}

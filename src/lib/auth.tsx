@@ -54,7 +54,10 @@ function migrateAuthStorage(toSessionOnly: boolean) {
     if (value) to.setItem(tokenKey, value);
     from.removeItem(tokenKey);
   }
-  if (toSessionOnly) {
+  // Default session storage for first-time visitors
+  if (!toSessionOnly && !from) {
+    window.sessionStorage.setItem(SESSION_ONLY_KEY, "1");
+  } else if (toSessionOnly) {
     window.sessionStorage.setItem(SESSION_ONLY_KEY, "1");
   } else {
     window.sessionStorage.removeItem(SESSION_ONLY_KEY);
@@ -101,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authReady, setAuthReady] = useState(false);
   const [roleLoading, setRoleLoading] = useState(false);
   const [storageMode, setStorageMode] = useState<"local" | "session">(() =>
-    isSessionOnly() ? "session" : "local",
+    typeof window !== "undefined" && isSessionOnly() ? "session" : "local",
   );
 
   // Reboot auth on the newly selected storage without a page reload.
