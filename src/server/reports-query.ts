@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { attachAuthHeader } from "@/integrations/supabase/auth-client-middleware";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sanitizeDateRange } from "@/lib/date-range";
-import { REPORT_COLUMNS } from "@/lib/supabase-queries";
+import { REPORT_COLUMNS, fetchDefectDetailsByReportIds } from "@/lib/supabase-queries";
 import type { Database } from "@/integrations/supabase/types";
 
 type GetReportsInput = {
@@ -55,4 +55,42 @@ export const getReports = createServerFn({ method: "POST" })
     if (error) throw new Response(error.message, { status: 500 });
 
     return { reports: reports ?? [] };
+  });
+
+export const getDashboardData = createServerFn({ method: "POST" })
+  .middleware([attachAuthHeader, requireSupabaseAuth])
+  .validator((input: GetReportsInput) => {
+    if (!input.from || !input.to) {
+      throw new Response("Date range required", { status: 400 });
+    }
+    return input;
+  })
+  .handler(async ({ context, data }) => {
+    const ctx = context as unknown as { supabase: SupabaseClient<Database>; userId: string };
+    if (!ctx.supabase || !ctx.userId) {
+      throw new Response("Invalid auth context", { status: 500 });
+    }
+
+    const { from, to } = sanitizeDateRange(data.from, data.to);
+
+    const [reportsResult, profilesResult] = await Promise.all([
+      ctx.supabase
+        .from("inspection_reports")
+        .select(REPORT_COLUMNS)
+        .gte("report_date", from)
+        .lte("report_date", to)
+        .order("report_date", { ascending: true })
+        .limit(1000),
+      ctx.supabase.from("profiles").select("id,full_name,email"),
+    ]);
+
+    if (reportsResult.error) throw new Response(reportsResult.error.message, { status: 500 });
+    if (profilesResult.error) throw new Response(profilesResult.error.message, { status: 500 });
+
+    const reports = reportsResult.data ?? [];
+    const profiles = profilesResult.data ?? [];
+    const reportIds = reports.map((row) => row.id);
+    const details = await fetchDefectDetailsByReportIds(reportIds);
+
+    return { reports, details, profiles };
   });

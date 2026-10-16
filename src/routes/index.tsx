@@ -29,13 +29,11 @@ import { RichTable, type RichColumn, ChartWithValues } from "@/components/data-t
 import { sanitizeDateRange } from "@/lib/date-range";
 import { logFilterLoadDuration } from "@/lib/dev-observability";
 import { fmtNum, fmtPct } from "@/lib/format";
-import { supabase } from "@/integrations/supabase/client";
-import { fetchDefectDetailsByReportIds, REPORT_COLUMNS } from "@/lib/supabase-queries";
+import { getDashboardData } from "@/server/reports-query";
 import {
   aggregateBy,
   applyManagementFilters,
   buildDefectPareto,
-  buildProfileLookup,
   buildProductNgTrend,
   buildTrend,
   enrichReports,
@@ -154,23 +152,14 @@ function Dashboard() {
   const baseQuery = useQuery({
     queryKey: ["dashboard-management", safeDateRange.from, safeDateRange.to],
     queryFn: async () => {
-      const [{ data: reports, error: reportError }, { data: profiles, error: profileError }] =
-        await Promise.all([
-          supabase
-            .from("inspection_reports")
-            .select(REPORT_COLUMNS)
-            .gte("report_date", safeDateRange.from)
-            .lte("report_date", safeDateRange.to)
-            .order("report_date", { ascending: true })
-            .limit(500),
-          supabase.from("profiles").select("id,full_name,email"),
-        ]);
-      if (reportError) throw reportError;
-      if (profileError) throw profileError;
-
-      const reportIds = (reports ?? []).map((row) => row.id);
-      const details = await fetchDefectDetailsByReportIds(reportIds);
-      return { reports: reports ?? [], details, profiles: profiles ?? [] };
+      const result = await getDashboardData({
+        from: safeDateRange.from,
+        to: safeDateRange.to,
+        meja: filters.meja ? Number(filters.meja) : undefined,
+        shift: filters.shift || undefined,
+        inspectorId: filters.inspectorId || undefined,
+      });
+      return result;
     },
     staleTime: 60_000,
     refetchOnWindowFocus: false,
@@ -184,7 +173,12 @@ function Dashboard() {
 
   const enrichedRows = useMemo(() => {
     const reports = baseQuery.data?.reports ?? [];
-    const profilesById = buildProfileLookup(baseQuery.data?.profiles);
+    const profilesById = new Map(
+      (baseQuery.data?.profiles ?? []).map((p) => [
+        p.id,
+        { full_name: p.full_name, email: p.email },
+      ]),
+    );
     return enrichReports({
       reports,
       detailsByReportId: detailsById,

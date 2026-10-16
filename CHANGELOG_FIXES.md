@@ -82,4 +82,18 @@
 | **Log Keyword** | jam_mulai undefined, jam_selesai undefined, InputLogRow type divergent, ReportRow sync |
 | **Deploy** | PENDING verifikasi |
 
+### Fix #7 — Server-side aggregation for dashboard: Moved reports+profiles+defect fetch from client to server fn, added getDashboardData server function
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-16 |
+| **File** | `src/server/reports-query.ts`, `src/routes/index.tsx` |
+| **Masalah** | Dashboard `index.tsx` performed 3 sequential DB calls client-side (reports, profiles, defect_details) plus multiple `aggregateBy`/`buildTrend`/`buildDefectPareto`/`buildProductNgTrend` calls per render. Each filter change triggered redundant client-side aggregation. |
+| **Akar** | Original design had all data fetching on client; server fn `getReports` existed but was unused by dashboard. |
+| **Fix** | Added `getDashboardData` server function in `reports-query.ts` that fetches reports + profiles in parallel, then defect details, returning `{ reports, details, profiles }`. Updated `index.tsx` to call `getDashboardData` instead of direct Supabase queries. Removed unused `buildProfileLookup` import. |
+| **Verifikasi** | `npm run build` — clean. `npm run lint` — 0 errors. `npm test` — 43/43 passed. |
+| **Pelajaran** | Server functions should bundle related queries (reports + profiles + details) into single round trips. Client should only do filtering/aggregation on enriched data. |
+| **Log Keyword** | getDashboardData server fn, parallel queries, single round trip |
+| **Deploy** | PENDING verifikasi |
+
 <!-- ENTRI BARU DI BAWAH BARIS INI -->
