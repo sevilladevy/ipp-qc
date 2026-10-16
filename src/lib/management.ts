@@ -72,10 +72,7 @@ export type ManagementFilters = {
 };
 
 export type ValidationIssue =
-  | "missing_core"
-  | "negative_values"
-  | "output_mismatch"
-  | "ng_without_detail";
+  "missing_core" | "negative_values" | "output_mismatch" | "ng_without_detail";
 
 export type ValidationResult = {
   score: number;

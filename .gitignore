@@ -50,3 +50,5 @@ reports/*.json
 vite.pid
 vite*.log
 vite*-err.log
+
+.vercel
