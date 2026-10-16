@@ -15,6 +15,9 @@ export type ReportRow = {
   qty_check: number;
   total_ok: number | null;
   total_ng: number;
+  lot_no: string | null;
+  jam_mulai: string;
+  jam_selesai: string;
   created_by: string | null;
   created_at: string;
 };

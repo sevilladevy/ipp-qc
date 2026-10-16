@@ -1,26 +1,21 @@
-import type { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { DEFECT_COLUMNS_QUERY } from "@/lib/format";
+import type { ManagementFilters } from "@/lib/management";
 
 const DEFECT_DETAILS_CHUNK_SIZE = 500;
 
-// Dashboard/report summary type - only fields actually queried
-export type ReportSummary = {
-  id: string;
-  report_date: string;
-  shift: "A" | "B" | "C";
-  no_meja: number;
-  part_no: string;
-  part_name: string;
-  qty_check: number;
-  total_ok: number | null;
-  total_ng: number;
-  created_by: string | null;
-  created_at: string;
-};
-
 export const REPORT_COLUMNS =
-  "id,report_date,shift,no_meja,part_no,part_name,qty_check,total_ok,total_ng,lot_no,created_by,created_at";
+  "id,report_date,shift,no_meja,part_no,part_name,qty_check,total_ok,total_ng,lot_no,jam_mulai,jam_selesai,created_by,created_at";
+
+export function buildReportQueryFilters(filters: ManagementFilters) {
+  const conditions: Array<string | [string, string, unknown]> = [];
+  if (filters.from) conditions.push(["report_date", "gte", filters.from]);
+  if (filters.to) conditions.push(["report_date", "lte", filters.to]);
+  if (typeof filters.meja === "number") conditions.push(["no_meja", "eq", filters.meja]);
+  if (filters.shift) conditions.push(["shift", "eq", filters.shift]);
+  if (filters.inspectorId) conditions.push(["created_by", "eq", filters.inspectorId]);
+  return conditions;
+}
 
 export async function fetchDefectDetailsByReportIds(
   reportIds: string[],

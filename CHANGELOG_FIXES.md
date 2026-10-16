@@ -68,4 +68,18 @@
 | **Log Keyword** | dead code, cloudflare removal, builder placeholder |
 | **Deploy** | PENDING verifikasi |
 
+### Fix #6 — Report type unification + jam_mulai/jam_selesai bug fix: Unified REPORT_COLUMNS with DB schema, fixed undefined time fields in InputLogRow
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-16 |
+| **File** | `src/lib/supabase-queries.ts`, `src/lib/management.ts`, `src/hooks/useLogManagement.ts` |
+| **Masalah** | `REPORT_COLUMNS` string in `supabase-queries.ts` lacked `jam_mulai` and `jam_selesai` columns, while `InputLogRow` (in `useLogManagement.ts`) expected them via the loose `{ lot_no?: ... }` style type. `ReportRow` in `management.ts` also missing these two fields. Divergent types caused `jam_mulai`/`jam_selesai` always `undefined` in input log view. |
+| **Akar** | `REPORT_COLUMNS` was created before time fields were added to the form; `ReportRow` type was written independently and never re-synced. `InputLogRow` used a loose ad-hoc type instead of extending `ReportRow`. |
+| **Fix** | Added `jam_mulai: string` and `jam_selesai: string` to `REPORT_COLUMNS` string literal. Added both fields to `ReportRow` type in `management.ts`. Changed `InputLogRow` to `export type InputLogRow = ReportRow & { ... }` so it inherits the unified fields automatically. Also added `buildReportQueryFilters` helper to `supabase-queries.ts` for future server-side filtering. |
+| **Verifikasi** | `npm run build` — clean. `npm run lint` — 0 errors. `npm test` — 43/43 passed. |
+| **Pelajaran** | When a query column string grows new columns, update both the SQL projection AND the corresponding TypeScript type in lockstep. Prefer extending a base type over defining duplicate loose fields. |
+| **Log Keyword** | jam_mulai undefined, jam_selesai undefined, InputLogRow type divergent, ReportRow sync |
+| **Deploy** | PENDING verifikasi |
+
 <!-- ENTRI BARU DI BAWAH BARIS INI -->

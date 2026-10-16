@@ -7,23 +7,9 @@ import { useAuth } from "@/lib/auth";
 import { isPrivilegedUser } from "@/lib/auth";
 import { QUERY_KEYS } from "@/lib/constants";
 import { fetchDefectDetailsByReportIds, REPORT_COLUMNS } from "@/lib/supabase-queries";
-import type { Shift } from "./useInspectionForm";
+import type { ReportRow } from "@/lib/management";
 
-export type InputLogRow = {
-  id: string;
-  report_date: string;
-  shift: "A" | "B" | "C";
-  no_meja: number;
-  part_no: string;
-  part_name: string;
-  qty_check: number;
-  total_ok: number | null;
-  total_ng: number;
-  lot_no?: string | null;
-  created_by: string | null;
-  created_at: string;
-  jam_mulai?: string;
-  jam_selesai?: string;
+export type InputLogRow = ReportRow & {
   // Defect detail fields - use flexible object type
   detail: Record<string, unknown> | null;
   inspectorName: string;
