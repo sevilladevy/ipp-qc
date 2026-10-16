@@ -1,3 +1,17 @@
+### Fix #3 — Zod migration + DEFECT_COLUMNS unification: Replaced manual validation with zod schemas, unified query column string
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-16 |
+| **File** | `src/server/users.ts`, `src/lib/format.ts`, `src/lib/supabase-queries.ts` |
+| **Masalah** | `inviteUser` validator used manual regex for email/UUID, password length checks. `DEFECT_COLUMNS` string duplicated in `supabase-queries.ts` (separate from format.ts display array). Manual validation is harder to maintain than declarative schemas. |
+| **Akar** | Legacy pattern before zod adoption; duplicate column string was independent of display columns array. |
+| **Fix** | Added `inviteUserSchema` (zod: email, password min 8/max 72, fullName min 1/max 100 with transform trim, role enum) and `userIdSchema` (uuid) to `users.ts`. Removed manual regex validation. Exported `DEFECT_COLUMNS_QUERY` from `format.ts` and consumed in `supabase-queries.ts`, removing the duplicated string literal. |
+| **Verifikasi** | `npm run build` — clean. `npm run lint` — 0 errors. `npm test` — 43/43 passed. |
+| **Pelajaran** | Use zod schemas in validators: single source of truth for types + validation. Query column strings should live near display constants, not be duplicated. |
+| **Log Keyword** | zod migration, DEFECT_COLUMNS query, manual validation removal |
+| **Deploy** | PENDING verifikasi |
+
 ### Fix #2 — Dead code removal + Prisma cleanup + validator migration: Removed unused UI components, prisma packages, and migrated deprecated inputValidator
 
 | Field | Value |

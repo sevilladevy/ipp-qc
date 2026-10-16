@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { attachAuthHeader } from "@/integrations/supabase/auth-client-middleware";
 import {
@@ -15,6 +16,25 @@ type ServerContext = {
   supabase: AppSupabaseClient;
   userId: string;
 };
+
+// Zod schemas for input validation
+const inviteUserSchema = z.object({
+  email: z.string().email("Email tidak valid").min(1, "Email wajib diisi"),
+  password: z
+    .string()
+    .min(8, "Password minimal 8 karakter")
+    .max(72, "Password maksimal 72 karakter"),
+  fullName: z
+    .string()
+    .min(1, "Nama lengkap wajib diisi")
+    .max(100, "Nama maksimal 100 karakter")
+    .transform((v) => v.trim()),
+  role: z.enum(["inspector", "supervisor"]),
+});
+
+const userIdSchema = z.object({
+  userId: z.string().uuid("userId tidak valid"),
+});
 
 async function assertSupervisor(ctx: ServerContext) {
   const { data, error } = await ctx.supabase
@@ -124,30 +144,7 @@ export const listUsers = createServerFn({ method: "POST" })
 
 export const inviteUser = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
-  .validator(
-    (input: {
-      email: string;
-      password: string;
-      fullName: string;
-      role: "inspector" | "supervisor";
-    }) => {
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!input.email || !emailRegex.test(input.email)) {
-        throw new Response("Email tidak valid", { status: 400 });
-      }
-      // Password: min 8, max 72 chars
-      if (!input.password || input.password.length < 8 || input.password.length > 72) {
-        throw new Response("Password minimal 8 karakter", { status: 400 });
-      }
-      // Full name: trim, min 1, max 100 chars
-      const fullName = input.fullName?.trim();
-      if (!fullName || fullName.length > 100) {
-        throw new Response("Nama lengkap wajib diisi (maks 100 karakter)", { status: 400 });
-      }
-      return { ...input, fullName };
-    },
-  )
+  .validator((input: unknown) => inviteUserSchema.parse(input))
   .handler(async ({ context, data }) => {
     const ctx = context as unknown as ServerContext;
     await assertSupervisor(ctx);
@@ -176,14 +173,7 @@ export const inviteUser = createServerFn({ method: "POST" })
 
 export const promoteToSupervisor = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
-  .validator((input: { userId: string }) => {
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!input.userId || !uuidRegex.test(input.userId)) {
-      throw new Response("userId tidak valid", { status: 400 });
-    }
-    return input;
-  })
+  .validator((input: unknown) => userIdSchema.parse(input))
   .handler(async ({ context, data }) => {
     const ctx = context as unknown as ServerContext;
     await assertSupervisor(ctx);
@@ -206,14 +196,7 @@ export const promoteToSupervisor = createServerFn({ method: "POST" })
 
 export const deleteUser = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
-  .validator((input: { userId: string }) => {
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!input.userId || !uuidRegex.test(input.userId)) {
-      throw new Response("userId tidak valid", { status: 400 });
-    }
-    return input;
-  })
+  .validator((input: unknown) => userIdSchema.parse(input))
   .handler(async ({ context, data }) => {
     const ctx = context as unknown as ServerContext;
     await assertSupervisor(ctx);

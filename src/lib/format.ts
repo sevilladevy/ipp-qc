@@ -5,6 +5,9 @@ export type DefectColumnKey = Exclude<
   "created_at" | "extra_defects" | "id" | "report_id"
 >;
 
+export const DEFECT_COLUMNS_QUERY =
+  "short_shot,lipat,burry,bending,dirty,kontaminasi,filter_bolong_rusak,shinning,silver,flow_mark,burn_mark,sink_mark,ejector_mark,gas_mark,crack,gap,dented,scratch,flash,double_inject,bubble,gate_long,gate_hole,over_cut,under_cut,black_dot,deform,weld_line,start_up_setting_alarm,extra_defects";
+
 export function fmtPct(n: number | null | undefined, digits = 2): string {
   if (n == null || !Number.isFinite(n)) return "-";
   return `${(n * 100).toFixed(digits)}%`;

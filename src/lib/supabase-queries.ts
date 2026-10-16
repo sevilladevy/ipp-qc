@@ -1,5 +1,6 @@
 import type { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
+import { DEFECT_COLUMNS_QUERY } from "@/lib/format";
 
 const DEFECT_DETAILS_CHUNK_SIZE = 500;
 
@@ -20,8 +21,6 @@ export type ReportSummary = {
 
 export const REPORT_COLUMNS =
   "id,report_date,shift,no_meja,part_no,part_name,qty_check,total_ok,total_ng,lot_no,created_by,created_at";
-const DEFECT_COLUMNS =
-  "id,report_id,short_shot,lipat,burry,bending,dirty,kontaminasi,filter_bolong_rusak,shinning,silver,flow_mark,burn_mark,sink_mark,ejector_mark,gas_mark,crack,gap,dented,scratch,flash,double_inject,bubble,gate_long,gate_hole,over_cut,under_cut,black_dot,deform,weld_line,start_up_setting_alarm,extra_defects,created_at";
 
 export async function fetchDefectDetailsByReportIds(
   reportIds: string[],
@@ -36,7 +35,10 @@ export async function fetchDefectDetailsByReportIds(
 
   const responses = await Promise.all(
     chunks.map((chunk) =>
-      supabase.from("inspection_defect_details").select(DEFECT_COLUMNS).in("report_id", chunk),
+      supabase
+        .from("inspection_defect_details")
+        .select(`id,report_id,${DEFECT_COLUMNS_QUERY},created_at`)
+        .in("report_id", chunk),
     ),
   );
 
