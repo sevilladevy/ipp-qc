@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   TrendingUp,
   RefreshCw,
+  Download,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { getPeriodRange, PeriodFilter, type PeriodMode } from "@/components/PeriodFilter";
@@ -29,7 +30,7 @@ import { RichTable, type RichColumn, ChartWithValues } from "@/components/data-t
 import { sanitizeDateRange } from "@/lib/date-range";
 import { logFilterLoadDuration } from "@/lib/dev-observability";
 import { fmtNum, fmtPct } from "@/lib/format";
-import { getDashboardData } from "@/server/reports-query";
+import { getDashboardData, getKpiMonthlyData } from "@/server/reports-query";
 import {
   aggregateBy,
   applyManagementFilters,
@@ -40,6 +41,7 @@ import {
   formatValidationIssue,
   type ManagementFilters,
 } from "@/lib/management";
+import { exportToKpiMonthlyPptx, type KpiMonthlyPptxData } from "@/lib/powerpoint-export";
 
 export const Route = createFileRoute("/")({
   component: () => (
@@ -133,6 +135,7 @@ function Dashboard() {
   const now = new Date();
   const initialRange = getPeriodRange("weekly", now);
   const [periodMode, setPeriodMode] = useState<PeriodMode>("weekly");
+  const [kpiExporting, setKpiExporting] = useState(false);
   const [filters, setFilters] = useState<ManagementFilters>({
     from: initialRange.from,
     to: initialRange.to,
@@ -332,6 +335,35 @@ function Dashboard() {
     isFetchingRef.current = isFetching;
   }, [baseQuery.isFetching, filterSignature, filteredRows.length]);
 
+  const handleExportKpiPptx = async () => {
+    setKpiExporting(true);
+    try {
+      const result = await getKpiMonthlyData({
+        from: safeDateRange.from,
+        to: safeDateRange.to,
+        meja: filters.meja ? Number(filters.meja) : undefined,
+        shift: filters.shift || undefined,
+        inspectorId: filters.inspectorId || undefined,
+        part: filters.part || undefined,
+      });
+      const pptxData: KpiMonthlyPptxData = {
+        monthYear: result.monthYear,
+        from: result.from,
+        to: result.to,
+        totals: result.totals,
+        trend: result.trend,
+        defectPareto: result.defectPareto,
+        mejaRows: result.mejaRows,
+        shiftRows: result.shiftRows,
+      };
+      await exportToKpiMonthlyPptx(pptxData);
+    } catch (err) {
+      console.error("KPI export failed:", err);
+    } finally {
+      setKpiExporting(false);
+    }
+  };
+
   const mejaColumns: RichColumn<AggRow>[] = useMemo(
     () => [
       { key: "meja", header: "Meja", accessor: (r) => `Meja ${r.key}`, sortable: true },
@@ -529,6 +561,19 @@ function Dashboard() {
           {!baseQuery.isLoading && filteredRows.length === 0 && (
             <Badge variant="warning">No Data</Badge>
           )}
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={handleExportKpiPptx}
+            disabled={kpiExporting || baseQuery.isLoading}
+            title="导出KPI月度报告(PPTX)"
+          >
+            {kpiExporting ? (
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            <span className="ml-1">KPI报告</span>
+          </button>
         </div>
       </div>
 
