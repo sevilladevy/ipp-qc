@@ -8,7 +8,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { user, loading: authLoading, signIn, switchAuthStorage, rateLimitInfo } = useAuth();
+  const { user, loading: authLoading, signIn } = useAuth();
   const router = useRouter();
 
   // Bounce already-authenticated users away from the login form.
@@ -26,8 +26,6 @@ function LoginPage() {
   const [focused, setFocused] = useState<string | null>(null);
 
   function handleRememberChange(checked: boolean) {
-    // Reboot auth on the new storage immediately (no page reload, no
-    // session to migrate while logged out, typed input is preserved).
     setRemember(checked);
     switchAuthStorage(!checked);
   }
@@ -202,32 +200,7 @@ function LoginPage() {
               <span>Ingat saya di perangkat ini</span>
             </label>
 
-            {rateLimitInfo && rateLimitInfo.isLimited && (
-              <div className="ipp-field">
-                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
-                  <strong>Terlalu banyak percobaan login.</strong>
-                  <p className="mt-1">
-                    Sisa percobaan: {rateLimitInfo.remaining}. Coba lagi dalam{" "}
-                    {Math.ceil(rateLimitInfo.resetIn / 60)} menit.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {rateLimitInfo && !rateLimitInfo.isLimited && rateLimitInfo.remaining < 3 && (
-              <div className="ipp-field">
-                <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground">
-                  <strong>Peringatan:</strong> Sisa percobaan: {rateLimitInfo.remaining} sebelum
-                  terkunci.
-                </div>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || (rateLimitInfo?.isLimited ?? false)}
-              className="ipp-btn"
-            >
+            <button type="submit" disabled={loading} className="ipp-btn">
               <div className="ipp-btn-shine" />
               <span className="ipp-btn-inner">
                 {loading ? (

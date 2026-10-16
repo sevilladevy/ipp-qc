@@ -40,12 +40,11 @@ function generateErrorId(): string {
  */
 function logErrorToConsole(error: Error, errorInfo?: ErrorInfo): void {
   if (import.meta.env.DEV) {
-    console.group(`[ErrorBoundary] Error caught at ${new Date().toISOString()}`);
+    console.warn(`[ErrorBoundary] Error caught at ${new Date().toISOString()}`);
     console.error("Error:", error);
     if (errorInfo?.componentStack) {
       console.error("Component Stack:", errorInfo.componentStack);
     }
-    console.groupEnd();
   }
 }
 
@@ -57,7 +56,7 @@ async function sendErrorReport(report: ErrorReport): Promise<void> {
   if (import.meta.env.PROD) {
     try {
       // Example: await fetch('/api/errors', { method: 'POST', body: JSON.stringify(report) });
-      console.log("[ErrorReport]", JSON.stringify(report, null, 2));
+      console.warn("[ErrorReport]", JSON.stringify(report, null, 2));
     } catch {
       // Silently fail - don't throw in error boundary
     }
@@ -133,7 +132,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     // Log the retry attempt
     if (import.meta.env.DEV) {
-      console.log(`[ErrorBoundary] Retrying recovery. Previous error: ${error?.message}`);
+      console.warn(`[ErrorBoundary] Retrying recovery. Previous error: ${error?.message}`);
     }
 
     this.setState({ hasError: false, error: null, errorId: undefined, timestamp: undefined });

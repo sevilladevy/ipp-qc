@@ -1,4 +1,4 @@
-// Client-side auth middleware - attaches Supabase token OR demo headers to server requests
+// Client-side auth middleware - attaches Supabase token to server requests
 import { createMiddleware } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,29 +18,6 @@ function isUnauthorizedError(error: unknown): boolean {
 }
 
 export const attachAuthHeader = createMiddleware({ type: "function" }).client(async ({ next }) => {
-  // Demo headers are only valid when demo mode is enabled (must match the
-  // server-side requireSupabaseAuth check). A stale demo_session must never
-  // hijack real authenticated requests, otherwise server functions return 401.
-  const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
-  if (DEMO_MODE) {
-    const demoSessionRaw =
-      typeof window !== "undefined" ? sessionStorage.getItem("demo_session") : null;
-    if (demoSessionRaw) {
-      try {
-        const { role } = JSON.parse(demoSessionRaw);
-        const demoUserId = `demo-${role}-${Date.now()}`;
-        return await next({
-          headers: {
-            "x-demo-user-id": demoUserId,
-            "x-demo-user-role": role,
-          },
-        }).catch(handleRequestError);
-      } catch {
-        /* ignore */
-      }
-    }
-  }
-
   // Normal Supabase auth - try to get and refresh session
   try {
     const {
@@ -114,7 +91,6 @@ async function handleRequestError(error: unknown): Promise<never> {
         if (key.startsWith("sb-")) storage.removeItem(key);
       }
     }
-    sessionStorage.removeItem("demo_session");
     // Sign out is fire-and-forget (can fail if token already invalid)
     void supabase.auth.signOut().catch(() => {});
     // Redirect to login if not already there

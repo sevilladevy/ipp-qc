@@ -1,23 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { SESSION_ONLY_KEY, resetSupabaseClient, supabase } from "@/integrations/supabase/client";
-import {
-  checkRateLimit,
-  clearRateLimit,
-  getRateLimitInfo,
-  recordFailedAttempt,
-} from "@/lib/rate-limit";
 
 export type AppRole = "inspector" | "supervisor";
-
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL as string | undefined;
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
-
-// Demo users for development/demo mode (bypass Supabase auth).
-// Only active when VITE_DEMO_MODE === "true".
-const DEMO_USERS: Record<string, { password: string; role: AppRole; name: string }> = {
-  "inspector@demo.com": { password: "demo123", role: "inspector", name: "Demo Inspector" },
-};
 
 const REMEMBERED_EMAIL_KEY = "ipp_remembered_email";
 
@@ -87,11 +72,8 @@ function clearPersistedAuth() {
   window.sessionStorage.removeItem("demo_session");
 }
 
-export function isPrivilegedUser(role: AppRole | null, email: string | null | undefined): boolean {
-  return (
-    role === "supervisor" ||
-    (ADMIN_EMAIL ? email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() : false)
-  );
+export function isPrivilegedUser(role: AppRole | null): boolean {
+  return role === "supervisor";
 }
 
 interface AuthContextValue {
@@ -108,29 +90,9 @@ interface AuthContextValue {
   isSupervisor: boolean;
   /** Switch auth persistence without a page reload (login page toggle). */
   switchAuthStorage: (sessionOnly: boolean) => void;
-  demoMode?: boolean;
-  rateLimitInfo?: {
-    isLimited: boolean;
-    remaining: number;
-    resetIn: number;
-    limit: number;
-  };
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-// Create a mock user for demo mode
-function createMockUser(email: string, role: AppRole): User {
-  return {
-    id: `demo-${role}-${Date.now()}`,
-    email,
-    role,
-    aud: "authenticated",
-    created_at: new Date().toISOString(),
-    app_metadata: { provider: "email", role },
-    user_metadata: { full_name: DEMO_USERS[email]?.name || email },
-  } as unknown as User;
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -138,7 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [roleLoading, setRoleLoading] = useState(false);
-  const [demoMode, setDemoMode] = useState(false);
   const [storageMode, setStorageMode] = useState<"local" | "session">(() =>
     isSessionOnly() ? "session" : "local",
   );
@@ -156,33 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
   const loading = !authReady || roleLoading;
 
-  // Check for demo session on mount
   useEffect(() => {
-    if (!DEMO_MODE) {
-      // Purge stale demo sessions left by an older demo-enabled build.
-      // Otherwise a lingering demo_session would hijack server-function auth.
-      sessionStorage.removeItem("demo_session");
-      return;
-    }
-    const demoSession = sessionStorage.getItem("demo_session");
-    if (demoSession) {
-      try {
-        const { email, role: demoRole } = JSON.parse(demoSession);
-        setUser(createMockUser(email, demoRole));
-        setRole(demoRole);
-        setDemoMode(true);
-      } catch {
-        sessionStorage.removeItem("demo_session");
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (demoMode) {
-      setAuthReady(true);
-      return;
-    }
-
     let active = true;
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
@@ -238,10 +173,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       active = false;
       sub.subscription.unsubscribe();
     };
-  }, [demoMode, storageMode]);
+  }, [storageMode]);
 
   useEffect(() => {
-    if (!authReady || demoMode) return;
+    if (!authReady) return;
 
     let active = true;
 
@@ -281,64 +216,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [authReady, user, demoMode]);
-
-  const [rateLimitInfo, setRateLimitInfo] = useState<AuthContextValue["rateLimitInfo"]>();
+  }, [authReady, user]);
 
   async function signIn(email: string, password: string, remember = true) {
-    // Check rate limit before attempting login
-    try {
-      checkRateLimit(email);
-    } catch (error) {
-      const info = getRateLimitInfo(email);
-      setRateLimitInfo(info);
-      return { error: (error as Error).message };
-    }
-
-    // Check for demo user first (bypasses Supabase auth) - only in demo mode
-    const demoUser = DEMO_MODE ? DEMO_USERS[email.toLowerCase()] : undefined;
-    if (demoUser && demoUser.password === password) {
-      // Clear rate limit on successful demo login
-      clearRateLimit(email);
-      setRateLimitInfo(undefined);
-      setDemoMode(true);
-
-      setRememberedEmail(email.toLowerCase(), remember);
-
-      const mockUser = createMockUser(email.toLowerCase(), demoUser.role);
-      setUser(mockUser);
-      setRole(demoUser.role);
-
-      // Store demo session
-      sessionStorage.setItem(
-        "demo_session",
-        JSON.stringify({ email: email.toLowerCase(), role: demoUser.role }),
-      );
-
-      return { error: null };
-    }
-
-    // Normal Supabase auth
+    // Normal Supabase auth only - no client-side bypass
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      // Record failed attempt
-      recordFailedAttempt(email);
-      const info = getRateLimitInfo(email);
-      setRateLimitInfo(info);
-
-      // Provide more helpful message if rate limited
-      if (info.isLimited) {
-        return {
-          error: `Terlalu banyak percobaan login. Silakan coba lagi dalam ${Math.ceil(info.resetIn / 60)} menit.`,
-        };
-      }
       return { error: error.message };
     }
-
-    // Clear rate limit on successful login
-    clearRateLimit(email);
-    setRateLimitInfo(undefined);
 
     // Ensure a leftover demo session never shadows the real session
     sessionStorage.removeItem("demo_session");
@@ -356,14 +242,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     // A fresh login starts with default (persistent) storage
     switchAuthStorage(false);
-    // Clear demo mode
-    if (demoMode) {
-      sessionStorage.removeItem("demo_session");
-      setDemoMode(false);
-      setUser(null);
-      setRole(null);
-      return;
-    }
 
     try {
       // Try to refresh session first, then sign out
@@ -383,7 +261,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null);
       setUser(null);
       setRole(null);
-      setDemoMode(false);
     }
   }
 
@@ -398,8 +275,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         isSupervisor: role === "supervisor",
         switchAuthStorage,
-        demoMode,
-        rateLimitInfo,
       }}
     >
       {children}

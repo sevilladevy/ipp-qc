@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { attachAuthHeader } from "@/integrations/supabase/auth-client-middleware";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { getSupabaseAdminClientOrNull } from "@/integrations/supabase/client.server";
 import type { Database, TablesInsert } from "@/integrations/supabase/types";
 import { KODE_TO_COLUMN } from "@/lib/format";
 import { toAppError } from "@/lib/errors";
@@ -29,17 +28,34 @@ type ReportContext = {
   demoMode?: boolean;
 };
 
+function validateInput(input: InputPayload): void {
+  if (!input.date?.trim()) throw new Response("Tanggal wajib diisi", { status: 400 });
+  if (!input.noMeja || input.noMeja <= 0) {
+    throw new Response("Pilih meja inspeksi", { status: 400 });
+  }
+  if (!input.partNo?.trim()) throw new Response("Part No wajib diisi", { status: 400 });
+  if (!input.partName?.trim()) throw new Response("Nama part wajib diisi", { status: 400 });
+  if (!input.jamMulai?.trim()) throw new Response("Jam mulai wajib diisi", { status: 400 });
+  if (!input.jamSelesai?.trim()) throw new Response("Jam selesai wajib diisi", { status: 400 });
+  if (!Number.isInteger(input.qtyCheck) || input.qtyCheck <= 0 || input.qtyCheck > 99999) {
+    throw new Response("Qty check harus bilangan bulat > 0", { status: 400 });
+  }
+}
+
 export const saveInspectionReport = createServerFn({ method: "POST" })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
+  .middleware([attachAuthHeader, requireSupabaseAuth])
   .inputValidator((input: InputPayload) => {
-    if (!input.date) throw new Response("Tanggal wajib diisi", { status: 400 });
-    if (!input.noMeja) throw new Response("Pilih meja inspeksi", { status: 400 });
-    if (!input.partNo?.trim()) throw new Response("Part No wajib diisi", { status: 400 });
-    if (!input.partName?.trim()) throw new Response("Nama part wajib diisi", { status: 400 });
-    if (!input.jamMulai?.trim()) throw new Response("Jam mulai wajib diisi", { status: 400 });
-    if (!input.jamSelesai?.trim()) throw new Response("Jam selesai wajib diisi", { status: 400 });
-    if (input.qtyCheck <= 0) throw new Response("Qty check harus > 0", { status: 400 });
+    validateInput(input);
+    // Validate defects keys are known or extra, values are reasonable
+    const validKeys = new Set<string>(Object.keys(KODE_TO_COLUMN));
+    for (const [key, value] of Object.entries(input.defects)) {
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        throw new Response(`Defect ${key} harus bilangan valid`, { status: 400 });
+      }
+      if (!validKeys.has(key) && !Object.prototype.hasOwnProperty.call(input.defects, key)) {
+        // Allow unknown keys for extra_defects but validate value range
+      }
+    }
     return input;
   })
   .handler(async ({ context, data }) => {
@@ -49,10 +65,8 @@ export const saveInspectionReport = createServerFn({ method: "POST" })
       throw new Response("Invalid auth context", { status: 500 });
     }
 
-    // Auth is already validated server-side by requireSupabaseAuth. Use the
-    // service-role client for trusted writes so strict RLS INSERT policies
-    // (which browser clients must satisfy) do not block validated writes.
-    const db = getSupabaseAdminClientOrNull() ?? ctx.supabase;
+    // Use user client (not admin) to enforce RLS policies
+    const db = ctx.supabase;
 
     try {
       // Run meja + part validation in PARALLEL
@@ -173,15 +187,26 @@ type UpdatePayload = {
 };
 
 export const updateInspectionReport = createServerFn({ method: "POST" })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
+  .middleware([attachAuthHeader, requireSupabaseAuth])
   .inputValidator((input: UpdatePayload) => {
-    if (!input.id) throw new Response("ID laporan tidak ditemukan", { status: 400 });
-    if (!input.report_date) throw new Response("Tanggal wajib diisi", { status: 400 });
-    if (!input.shift) throw new Response("Shift wajib diisi", { status: 400 });
-    if (!input.no_meja) throw new Response("Meja wajib diisi", { status: 400 });
-    if (input.qty_check <= 0) throw new Response("Qty check harus > 0", { status: 400 });
-    if (input.total_ng < 0) throw new Response("NG tidak boleh negatif", { status: 400 });
+    if (!input.id?.trim()) {
+      throw new Response("ID laporan tidak ditemukan", { status: 400 });
+    }
+    if (!input.report_date?.trim()) {
+      throw new Response("Tanggal wajib diisi", { status: 400 });
+    }
+    if (!input.shift) {
+      throw new Response("Shift wajib diisi", { status: 400 });
+    }
+    if (!input.no_meja || input.no_meja <= 0) {
+      throw new Response("Meja wajib diisi", { status: 400 });
+    }
+    if (!Number.isInteger(input.qty_check) || input.qty_check <= 0) {
+      throw new Response("Qty check harus bilangan bulat > 0", { status: 400 });
+    }
+    if (!Number.isInteger(input.total_ng) || input.total_ng < 0) {
+      throw new Response("NG tidak boleh negatif", { status: 400 });
+    }
     if (input.total_ng > input.qty_check) {
       throw new Response("NG tidak boleh lebih besar dari Qty Check", { status: 400 });
     }
@@ -229,18 +254,16 @@ export const updateInspectionReport = createServerFn({ method: "POST" })
   });
 
 export const deleteInspectionReport = createServerFn({ method: "POST" })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
+  .middleware([attachAuthHeader, requireSupabaseAuth])
   .inputValidator((input: { id: string }) => {
-    if (!input.id) throw new Response("ID laporan tidak ditemukan", { status: 400 });
+    if (!input.id?.trim()) throw new Response("ID laporan tidak ditemukan", { status: 400 });
     return input;
   })
   .handler(async ({ context, data }) => {
     const ctx = context as unknown as ReportContext;
 
-    // Use admin client to bypass RLS for delete operations
-    // Auth is already validated by requireSupabaseAuth
-    const db = getSupabaseAdminClientOrNull() ?? ctx.supabase;
+    // Use user client (not admin) to enforce RLS policies
+    const db = ctx.supabase;
 
     const { data: existing, error: findError } = await db
       .from("inspection_reports")

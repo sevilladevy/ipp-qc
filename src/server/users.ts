@@ -14,15 +14,9 @@ type AppSupabaseClient = SupabaseClient<Database>;
 type ServerContext = {
   supabase: AppSupabaseClient;
   userId: string;
-  demoMode?: boolean;
-  role?: "inspector" | "supervisor";
 };
 
 async function assertSupervisor(ctx: ServerContext) {
-  if (ctx.demoMode && ctx.role === "supervisor") return;
-  if (ctx.demoMode)
-    throw new Response("Hanya supervisor yang bisa mengakses halaman ini", { status: 403 });
-
   const { data, error } = await ctx.supabase
     .from("user_roles")
     .select("role")
@@ -91,27 +85,10 @@ async function listAppUsers(supabase: AppSupabaseClient) {
 }
 
 export const listUsers = createServerFn({ method: "POST" })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
+  .middleware([attachAuthHeader, requireSupabaseAuth])
   .handler(async ({ context }) => {
     const ctx = context as unknown as ServerContext;
     await assertSupervisor(ctx);
-
-    if (ctx.demoMode) {
-      return {
-        total: 1,
-        users: [
-          {
-            id: ctx.userId,
-            email: ctx.role === "supervisor" ? "supervisor@demo.com" : "inspector@demo.com",
-            full_name: ctx.role === "supervisor" ? "Demo Supervisor" : "Demo Inspector",
-            role: ctx.role || "inspector",
-            created_at: new Date().toISOString(),
-            last_sign_in_at: new Date().toISOString(),
-          },
-        ],
-      };
-    }
 
     const users = new Map<string, Awaited<ReturnType<typeof listAppUsers>>[number]>();
     try {
@@ -146,8 +123,7 @@ export const listUsers = createServerFn({ method: "POST" })
   });
 
 export const inviteUser = createServerFn({ method: "POST" })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
+  .middleware([attachAuthHeader, requireSupabaseAuth])
   .inputValidator(
     (input: {
       email: string;
@@ -155,21 +131,29 @@ export const inviteUser = createServerFn({ method: "POST" })
       fullName: string;
       role: "inspector" | "supervisor";
     }) => {
-      if (!input.email?.includes("@")) throw new Response("Email tidak valid", { status: 400 });
-      if (input.password.length < 6)
-        throw new Response("Password minimal 6 karakter", { status: 400 });
-      if (!input.fullName?.trim()) throw new Response("Nama lengkap wajib diisi", { status: 400 });
-      return input;
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!input.email || !emailRegex.test(input.email)) {
+        throw new Response("Email tidak valid", { status: 400 });
+      }
+      // Password: min 8, max 72 chars
+      if (!input.password || input.password.length < 8 || input.password.length > 72) {
+        throw new Response("Password minimal 8 karakter", { status: 400 });
+      }
+      // Full name: trim, min 1, max 100 chars
+      const fullName = input.fullName?.trim();
+      if (!fullName || fullName.length > 100) {
+        throw new Response("Nama lengkap wajib diisi (maks 100 karakter)", { status: 400 });
+      }
+      return { ...input, fullName };
     },
   )
   .handler(async ({ context, data }) => {
     const ctx = context as unknown as ServerContext;
     await assertSupervisor(ctx);
-    if (ctx.demoMode) throw new Response("Fitur tidak tersedia dalam demo mode", { status: 403 });
     if (!isSupabaseAdminConfigured())
       throw new Response("SUPABASE_SERVICE_ROLE_KEY tidak dikonfigurasi", { status: 500 });
 
-    console.log("[DEBUG] Creating user:", data.email);
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
       password: data.password,
@@ -191,16 +175,18 @@ export const inviteUser = createServerFn({ method: "POST" })
   });
 
 export const promoteToSupervisor = createServerFn({ method: "POST" })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
+  .middleware([attachAuthHeader, requireSupabaseAuth])
   .inputValidator((input: { userId: string }) => {
-    if (!input.userId) throw new Response("userId wajib", { status: 400 });
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!input.userId || !uuidRegex.test(input.userId)) {
+      throw new Response("userId tidak valid", { status: 400 });
+    }
     return input;
   })
   .handler(async ({ context, data }) => {
     const ctx = context as unknown as ServerContext;
     await assertSupervisor(ctx);
-    if (ctx.demoMode) throw new Response("Fitur tidak tersedia dalam demo mode", { status: 403 });
     if (!isSupabaseAdminConfigured())
       throw new Response("SUPABASE_SERVICE_ROLE_KEY tidak dikonfigurasi", { status: 500 });
 
@@ -219,16 +205,18 @@ export const promoteToSupervisor = createServerFn({ method: "POST" })
   });
 
 export const deleteUser = createServerFn({ method: "POST" })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  .middleware([attachAuthHeader, requireSupabaseAuth] as any)
+  .middleware([attachAuthHeader, requireSupabaseAuth])
   .inputValidator((input: { userId: string }) => {
-    if (!input.userId) throw new Response("userId wajib", { status: 400 });
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!input.userId || !uuidRegex.test(input.userId)) {
+      throw new Response("userId tidak valid", { status: 400 });
+    }
     return input;
   })
   .handler(async ({ context, data }) => {
     const ctx = context as unknown as ServerContext;
     await assertSupervisor(ctx);
-    if (ctx.demoMode) throw new Response("Fitur tidak tersedia dalam demo mode", { status: 403 });
     if (!isSupabaseAdminConfigured())
       throw new Response("SUPABASE_SERVICE_ROLE_KEY tidak dikonfigurasi", { status: 500 });
     if (data.userId === ctx.userId)

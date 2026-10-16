@@ -3,8 +3,13 @@ import path from "node:path";
 import { chromium } from "playwright";
 
 const BASE_URL = process.env.E2E_BASE_URL || "http://127.0.0.1:5173";
-const EMAIL = process.env.E2E_EMAIL || "admin@ipp.com";
-const PASSWORD = process.env.E2E_PASSWORD || "admin@123";
+const EMAIL = process.env.E2E_EMAIL;
+const PASSWORD = process.env.E2E_PASSWORD;
+
+if (!EMAIL || !PASSWORD) {
+  console.error("Missing E2E_EMAIL or E2E_PASSWORD in environment");
+  process.exit(1);
+}
 const FIXTURE_CONFIG_PATH =
   process.env.E2E_FIXTURE_CONFIG_PATH || "scripts/e2e-fixture-config.json";
 const OUT_DIR = path.resolve("reports");

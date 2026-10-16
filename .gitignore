@@ -27,6 +27,12 @@ supabase/.temp/
 scripts/e2e-fixture-config.json
 reports/e2e-screenshots/
 
+# Runtime/generated artifacts (should not be committed)
+reports/*.csv
+reports/*.png
+reports/*.json
+!reports/.gitkeep
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -37,8 +43,6 @@ reports/e2e-screenshots/
 *.njsproj
 *.sln
 *.sw?
-
-# Environment variables.env
 
 .vercel
 .env.vercel

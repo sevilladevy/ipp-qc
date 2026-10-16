@@ -454,7 +454,7 @@ function QmsAuditPage() {
   const { data: rows } = useAuditSchedules();
   const { data: profiles } = useQmsProfiles();
   const { createSchedule, updateSchedule, deleteSchedule } = useAuditMutations();
-  const canManage = isPrivilegedUser(role, user?.email);
+  const canManage = isPrivilegedUser(role);
   const canRaise = user !== null;
   const today = format(new Date(), "yyyy-MM-dd");
 

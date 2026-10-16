@@ -94,7 +94,7 @@ function LaporanPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { role, user } = useAuth();
-  const canDelete = isPrivilegedUser(role, user?.email);
+  const canDelete = isPrivilegedUser(role);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 

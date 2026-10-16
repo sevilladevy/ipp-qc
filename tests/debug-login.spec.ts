@@ -15,16 +15,19 @@ test("debug login flow", async ({ page }) => {
   const emailInput = page.getByRole("textbox", { name: /email/i });
   const passwordInput = page.getByRole("textbox", { name: /password/i });
   await expect(emailInput).toBeVisible({ timeout: 10000 });
+  // eslint-disable-next-line no-console
   console.log("Email input visible:", await emailInput.isVisible().catch(() => false));
 
   await emailInput.fill(EMAIL);
   await passwordInput.fill(PASSWORD);
 
   const submitButton = page.getByRole("button", { name: /login|masuk|submit/i });
+  // eslint-disable-next-line no-console
   console.log("Submit button visible:", await submitButton.isVisible());
   await submitButton.click();
 
   await page.waitForURL(BASE_URL + "/", { timeout: 30000 });
+  // eslint-disable-next-line no-console
   console.log("Current URL:", page.url());
   await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible({
     timeout: 10000,

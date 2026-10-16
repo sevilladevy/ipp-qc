@@ -55,7 +55,7 @@ export function initDevObservability() {
     if (text.includes('Lock "lock:sb-') && text.includes("was not released within 5000ms")) {
       state.authLockWarnings += 1;
       if (state.authLockWarnings === 1 || state.authLockWarnings % 5 === 0) {
-        console.info(
+        console.warn(
           `[dev-observability] Supabase auth lock warning count: ${state.authLockWarnings}`,
         );
       }
@@ -107,7 +107,7 @@ export function logFilterLoadDuration(
   state.lastFilterEventKey = eventKey;
   state.lastFilterEventAtMs = nowMs;
 
-  console.info(
+  console.warn(
     `[dev-observability] ${scope} filter load ${event.durationMs}ms | rows=${rows} | ${signature}`,
   );
 }

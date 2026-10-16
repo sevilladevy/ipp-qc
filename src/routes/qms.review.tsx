@@ -73,7 +73,7 @@ function QmsReviewPage() {
   const qc = useQueryClient();
   const { data: rows } = useManagementReviews();
   const { createReview, updateReview, deleteReview } = useReviewMutations();
-  const canManage = isPrivilegedUser(role, user?.email);
+  const canManage = isPrivilegedUser(role);
 
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("");

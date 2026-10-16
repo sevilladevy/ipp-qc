@@ -6,6 +6,7 @@ description: Use when working on UI components, pages, styling, client-side logi
 # Front End
 
 Tech stack for this project:
+
 - **React 19** with TypeScript
 - **TanStack Router** (file-based routing in `src/routes/`)
 - **TanStack Query** (server state management)
@@ -18,6 +19,7 @@ Tech stack for this project:
 - **Playwright** (E2E testing)
 
 ## Conventions
+
 - Components use PascalCase filenames, utils use camelCase
 - UI primitives in `src/components/ui/`
 - Feature components in `src/components/`

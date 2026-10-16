@@ -117,7 +117,7 @@ function QmsNcPage() {
   const { data: rows } = useNonConformities();
   const { data: profiles } = useQmsProfiles();
   const { createNc, updateNc, deleteNc } = useNcMutations();
-  const canManage = isPrivilegedUser(role, user?.email);
+  const canManage = isPrivilegedUser(role);
   const canRaise = user !== null;
 
   const [keyword, setKeyword] = useState("");
