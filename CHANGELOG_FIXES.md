@@ -54,4 +54,18 @@
 | **Log Keyword** | god component, decomposition, hook extraction |
 | **Deploy** | PENDING verifikasi |
 
+### Fix #5 — Dead code cleanup: remove builder.tsx placeholder + cloudflare references
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-16 |
+| **File** | `src/routes/builder.tsx`, `package.json`, `vite.config.ts` |
+| **Masalah** | `builder.tsx` adalah placeholder kosong (44 baris) yang tidak dipakai. `@cloudflare/vite-plugin` di-instal tapi tidak dipakai — deploy target adalah Vercel. |
+| **Akar** | Leftover dari setup awal yang explore multiple deploy targets. |
+| **Fix** | Hapus `src/routes/builder.tsx`. Hapus `@cloudflare/vite-plugin` dari `package.json`. Hapus `cloudflare: false` dari `vite.config.ts`. |
+| **Verifikasi** | `npm run build` — clean. `npm run lint` — 0 errors. `npm test` — 43/43 passed. |
+| **Pelajaran** | Hapus package/deps yang tidak dipakai saat memilih stack final. |
+| **Log Keyword** | dead code, cloudflare removal, builder placeholder |
+| **Deploy** | PENDING verifikasi |
+
 <!-- ENTRI BARU DI BAWAH BARIS INI -->
