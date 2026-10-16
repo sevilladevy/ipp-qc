@@ -1,7 +1,7 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { nitro } from "nitro/vite";
 
-// Deploy target: Vercel. Cloudflare plugin disabled by default.
+// Deploy target: Vercel.
 const isVercel = process.env.VERCEL === "1";
 
 // Test artifacts (screenshots, reports, logs, specs) change constantly
@@ -16,7 +16,6 @@ const e2eWatchIgnored = [
 ];
 
 export default defineConfig({
-  cloudflare: false,
   ...(isVercel ? { plugins: [nitro()] } : {}),
   vite: {
     server: {

@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalitikRouteImport } from './routes/analitik'
-import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as InputRouteImport } from './routes/input'
 import { Route as LaporanRouteImport } from './routes/laporan'
 import { Route as LoginRouteImport } from './routes/login'
@@ -34,11 +33,6 @@ const IndexRoute = IndexRouteImport.update({
 const AnalitikRoute = AnalitikRouteImport.update({
   id: '/analitik',
   path: '/analitik',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BuilderRoute = BuilderRouteImport.update({
-  id: '/builder',
-  path: '/builder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InputRoute = InputRouteImport.update({
@@ -110,7 +104,6 @@ const QmsReviewRoute = QmsReviewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analitik': typeof AnalitikRoute
-  '/builder': typeof BuilderRoute
   '/input': typeof InputRoute
   '/laporan': typeof LaporanRoute
   '/login': typeof LoginRoute
@@ -128,7 +121,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analitik': typeof AnalitikRoute
-  '/builder': typeof BuilderRoute
   '/input': typeof InputRoute
   '/laporan': typeof LaporanRoute
   '/login': typeof LoginRoute
@@ -147,7 +139,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/analitik': typeof AnalitikRoute
-  '/builder': typeof BuilderRoute
   '/input': typeof InputRoute
   '/laporan': typeof LaporanRoute
   '/login': typeof LoginRoute
@@ -167,7 +158,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/analitik'
-    | '/builder'
     | '/input'
     | '/laporan'
     | '/login'
@@ -185,7 +175,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/analitik'
-    | '/builder'
     | '/input'
     | '/laporan'
     | '/login'
@@ -203,7 +192,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/analitik'
-    | '/builder'
     | '/input'
     | '/laporan'
     | '/login'
@@ -222,7 +210,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalitikRoute: typeof AnalitikRoute
-  BuilderRoute: typeof BuilderRoute
   InputRoute: typeof InputRoute
   LaporanRoute: typeof LaporanRoute
   LoginRoute: typeof LoginRoute
@@ -244,13 +231,6 @@ declare module '@tanstack/react-router' {
       path: '/analitik'
       fullPath: '/analitik'
       preLoaderRoute: typeof AnalitikRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/builder': {
-      id: '/builder'
-      path: '/builder'
-      fullPath: '/builder'
-      preLoaderRoute: typeof BuilderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/input': {
@@ -383,7 +363,6 @@ const QmsRouteWithChildren = QmsRoute._addFileChildren(QmsRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalitikRoute: AnalitikRoute,
-  BuilderRoute: BuilderRoute,
   InputRoute: InputRoute,
   LaporanRoute: LaporanRoute,
   LoginRoute: LoginRoute,

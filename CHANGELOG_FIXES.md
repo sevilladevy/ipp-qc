@@ -40,4 +40,18 @@
 | **Log Keyword** | demo bypass, hardocoded password, service-role, RLS |
 | **Deploy** | PENDING verifikasi |
 
+### Fix #4 — God component decomposition: laporan.tsx → FilterBar+Row+Table, analitik.tsx → hook+tabs
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-16 |
+| **File** | `src/routes/laporan.tsx` (968→538 lines), `src/components/laporan/*`, `src/routes/analitik.tsx` (993→260 lines), `src/components/analytics/*`, `src/hooks/use-analytics-data.ts` |
+| **Masalah** | Two god components: `laporan.tsx` (968 lines) and `analitik.tsx` (993 lines) made logic reuse and testing impossible. |
+| **Akar** | Single-file pattern for complex routes. |
+| **Fix** | Decomposed `laporan.tsx` into `LaporanFilterBar`, `LaporanRow`, `LaporanTable` + slim page. Decomposed `analitik.tsx` into `useAnalyticsData` hook + `KpiGrid`, `OverviewCharts`, `MetricsTab`, `DeepDiveTab`, `ScatterNgVsQtyCheck`. Extracted `buildPartPareto` import to AnalyticsHelpers module. |
+| **Verifikasi** | `npm run build` — clean. `npm run lint` — 0 errors. `npm test` — 43/43 passed. |
+| **Pelajaran** | Keep routes under ~300 lines; extract shared logic to hooks/components early. |
+| **Log Keyword** | god component, decomposition, hook extraction |
+| **Deploy** | PENDING verifikasi |
+
 <!-- ENTRI BARU DI BAWAH BARIS INI -->
