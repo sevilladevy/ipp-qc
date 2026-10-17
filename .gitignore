@@ -57,3 +57,4 @@ vite*.log
 vite*-err.log
 
 .vercel
+.env*

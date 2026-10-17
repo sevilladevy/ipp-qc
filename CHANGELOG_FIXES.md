@@ -98,6 +98,20 @@
 
 <!-- ENTRI BARU DI BAWAH BARIS INI -->
 
+### Fix #9 — Dashboard 400 (`{data:}` wrapper) + master 500 (broken `beforeLoad`): callers passed payload directly, route threw unserializable Response
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-17 |
+| **File** | `src/routes/index.tsx`, `src/routes/master.tsx` |
+| **Masalah** | Dashboard server fns returned 400 (`Date range required`): `getDashboardData` / `getKpiMonthlyData` callers passed `{from, to, ...}` directly, but `createServerFn` expects `{data: {...}}` so validator received `undefined`. `/master` route returned 500: `beforeLoad` threw `new Response("Forbidden", {status: 403})` which TanStack Start's Seroval serializer cannot serialize during SSR. |
+| **Akar** | `createServerFn` client signature is `fn({data})` — passing the payload bare leaves `data` undefined and the validator throws 400 by design. Route-level `throw new Response(...)` in `beforeLoad` was intended as a supervisor guard but `Response` objects can't cross the SSR serialization boundary (only plain data can). AuthZ already enforced server-side via `assertSupervisor()` inside `users.ts` fns + client-side `isSupervisor` gate in `MasterLayout`. |
+| **Fix** | Wrapped both dashboard calls: `getDashboardData({data: {from, to, ...}})` + `getKpiMonthlyData({data: {from, to, ...}})`. Removed broken `beforeLoad` from `/master` route; kept in-component supervisor gate (`loading` spinner → `Akses Ditolak` for non-supervisor). Audited all other server-fn callers (`useInspectionForm`, `useLogManagement` wrappers, `laporan.tsx`, `master.users.tsx`) — all already use `{data:}` correctly. |
+| **Verifikasi** | `npx tsc --noEmit` — no new errors on `src/routes/index.tsx` / `src/routes/master.tsx` (remaining errors pre-existing across repo incl. middleware-typing on `reports-query.ts`). Full `npm run build` exceeded 30s tool timeout (Vite build, not code error). |
+| **Pelajaran** | `createServerFn` validators receive `data` field only — always call as `fn({data: payload})`. Never `throw new Response()` from route `beforeLoad`/`loader` in TanStack Start; use `redirect()` or render access-denied UI, and enforce authZ inside server fns. |
+| **Log Keyword** | dashboard 400, Date range required, data wrapper, master 500, beforeLoad Response, Seroval serialize |
+| **Deploy** | PENDING verifikasi |
+
 ### Fix #8 — Server fn crash `Cannot read properties of undefined (reading 'from')`: shared defect-detail query used the browser-only Supabase client on the server
 
 | Field | Value |

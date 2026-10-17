@@ -156,11 +156,13 @@ function Dashboard() {
     queryKey: ["dashboard-management", safeDateRange.from, safeDateRange.to],
     queryFn: async () => {
       const result = await getDashboardData({
-        from: safeDateRange.from,
-        to: safeDateRange.to,
-        meja: filters.meja ? Number(filters.meja) : undefined,
-        shift: filters.shift || undefined,
-        inspectorId: filters.inspectorId || undefined,
+        data: {
+          from: safeDateRange.from,
+          to: safeDateRange.to,
+          meja: filters.meja ? Number(filters.meja) : undefined,
+          shift: filters.shift || undefined,
+          inspectorId: filters.inspectorId || undefined,
+        },
       });
       return result;
     },
@@ -339,12 +341,14 @@ function Dashboard() {
     setKpiExporting(true);
     try {
       const result = await getKpiMonthlyData({
-        from: safeDateRange.from,
-        to: safeDateRange.to,
-        meja: filters.meja ? Number(filters.meja) : undefined,
-        shift: filters.shift || undefined,
-        inspectorId: filters.inspectorId || undefined,
-        part: filters.part || undefined,
+        data: {
+          from: safeDateRange.from,
+          to: safeDateRange.to,
+          meja: filters.meja ? Number(filters.meja) : undefined,
+          shift: filters.shift || undefined,
+          inspectorId: filters.inspectorId || undefined,
+          part: filters.part || undefined,
+        },
       });
       const pptxData: KpiMonthlyPptxData = {
         monthYear: result.monthYear,

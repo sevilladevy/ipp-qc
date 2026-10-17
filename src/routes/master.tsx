@@ -6,13 +6,6 @@ import { Users, Cog, Package, AlertTriangle } from "lucide-react";
 import { useEffect } from "react";
 
 export const Route = createFileRoute("/master")({
-  beforeLoad: async ({ context }) => {
-    // Server-side supervisor guard
-    const isSupervisor = context?.role === "supervisor";
-    if (!isSupervisor) {
-      throw new Response("Forbidden", { status: 403 });
-    }
-  },
   component: MasterLayout,
 });
 
