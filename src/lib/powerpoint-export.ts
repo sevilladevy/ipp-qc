@@ -397,24 +397,14 @@ function addTrendSlide(
     return;
   }
 
-  // Combo chart: Qty Check = Clustered Column (primary axis),
-  // Yield % + NG Rate % = Line on secondary axis (pptxgenjs v4 multi-chart)
+  // Trend chart: Qty Check, Yield %, NG Rate % as lines over time (single chart type, safe in pptxgenjs v4)
   const labels = trend.map((d) => format(new Date(d.date), "dd MMM"));
   slide.addChart(
+    pptx.charts.LINE,
     [
-      {
-        type: pptx.charts.BAR,
-        data: [{ name: "Qty Check", labels, values: trend.map((d) => d.qty_check) }],
-        options: { barDir: "col", barGrouping: "clustered" },
-      },
-      {
-        type: pptx.charts.LINE,
-        data: [
-          { name: "Yield %", labels, values: trend.map((d) => d.passRate) },
-          { name: "NG Rate %", labels, values: trend.map((d) => d.ngRate) },
-        ],
-        options: { lineSmooth: true },
-      },
+      { name: "Qty Check", labels, values: trend.map((d) => d.qty_check) },
+      { name: "Yield %", labels, values: trend.map((d) => d.passRate) },
+      { name: "NG Rate %", labels, values: trend.map((d) => d.ngRate) },
     ],
     {
       x: 0.5,
@@ -427,10 +417,11 @@ function addTrendSlide(
       legendPos: "b",
       showValue: true,
       dataLabelFontSize: 8,
+      lineSmooth: true,
       catLabelFontSize: 9,
       valLabelFontSize: 9,
       showValAxisTitle: true,
-      valAxisTitle: "Qty Check / %",
+      valAxisTitle: "Value / %",
     },
   );
 

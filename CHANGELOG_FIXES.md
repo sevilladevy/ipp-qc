@@ -251,3 +251,17 @@
 | **Pelajaran** | pptxgenjs v4 multi-chart `valAxes` with 2 entries is broken (dangling axis cross-ref). Avoid until library fix; use single axis or split into separate charts. |
 | **Log Keyword** | PPTX corrupt Slide 3, trend combo chart, secondaryValAxis, valAxes dangling crossAx, chart XML invalid |
 | **Deploy** | PENDING verifikasi |
+
+### Fix #19 — PPTX error Slide 3: ganti multi-chart (BAR+LINE array) menjadi single LINE chart
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-17 |
+| **File** | `src/lib/powerpoint-export.ts` |
+| **Masalah** | User: PPTX masih error saat generate Slide 3 chart (trend "Output & Yield Trend"). Meski `valAxes` sudah dihapus (Fix #18), multi-chart array `[{type: BAR...}, {type: LINE...}]` di `addChart` masih berisiko menghasilkan XML chart yang tidak konsisten di pptxgenjs v4.0.1, terutama saat render di PowerPoint desktop. |
+| **Akar** | Memakai multi-chart array di `slide.addChart([...])` untuk menggabungkan kolom (Qty Check) + garis (Yield %, NG Rate %) dalam satu chart. Walau probe isolasi tanpa `valAxes` ternyata OK, kombinasi multi-chart + `showValue: true` + 3 series + data nyata masih memicu error di PowerPoint. |
+| **Fix** | Ganti menjadi **single chart type** `pptx.charts.LINE` dengan 3 series (Qty Check, Yield %, NG Rate %) yang share satu `labels` dan satu `values` per series. Tidak ada `secondaryValAxis`, tidak ada `valAxes`, tidak ada multi-chart array. `lineSmooth: true` untuk garis halus, `showValue: true` untuk menampilkan angka di setiap titik data. |
+| **Verifikasi** | Probe `writeFile` 9-slide real file: semua 6 chart XML valid, tidak ada dangling `crossAx` → `ALL CHARTS VALID`. Single LINE chart probe dengan `showValue: true` → OK. `npm test` — 43/43 passed. |
+| **Pelajaran** | Hindari multi-chart array di pptxgenjs v4 untuk chart yang akan dibuka di PowerPoint desktop — pakai single chart type saja walau visually kurang ideal (kolom+garis dicurahkan jadi semua garis). |
+| **Log Keyword** | PPTX error Slide 3, trend chart, single LINE chart, multi-chart array, pptxgenjs v4 |
+| **Deploy** | PENDING verifikasi |
