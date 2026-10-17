@@ -31,7 +31,12 @@ reports/e2e-screenshots/
 reports/*.csv
 reports/*.png
 reports/*.json
+reports/playwright/
+test-results/
 !reports/.gitkeep
+
+# Local console/debug dumps
+log error.txt
 
 # Editor directories and files
 .vscode/*
