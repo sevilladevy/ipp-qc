@@ -397,13 +397,13 @@ function addTrendSlide(
     return;
   }
 
-  // Chart data for pptxgen
-  const chartData = trend.map((d) => ({
-    name: format(new Date(d.date), "dd MMM"),
-    "Qty Check": d.qty_check,
-    "Yield %": d.passRate,
-    "NG Rate %": d.ngRate,
-  }));
+  // Chart data for pptxgen (multi-series: {name, labels, values}[])
+  const labels = trend.map((d) => format(new Date(d.date), "dd MMM"));
+  const chartData = [
+    { name: "Qty Check", labels, values: trend.map((d) => d.qty_check) },
+    { name: "Yield %", labels, values: trend.map((d) => d.passRate) },
+    { name: "NG Rate %", labels, values: trend.map((d) => d.ngRate) },
+  ];
 
   slide.addChart(pptx.charts.BAR, chartData, {
     x: 0.5,
@@ -536,11 +536,12 @@ function addParetoSlide(
     { x: 0.5, y: 0.9, w: 12.3, h: 0.3, fontSize: 10, color: C.muted, fontFace: "Calibri" },
   );
 
-  const chartData = top10.map((r) => ({
-    name: r.name.length > 18 ? r.name.substring(0, 18) + "…" : r.name,
-    Jumlah: r.total,
-    "Cum %": r.cumPct,
-  }));
+  const chartLabels = top10.map((r) =>
+    r.name.length > 18 ? r.name.substring(0, 18) + "…" : r.name,
+  );
+  const chartData = [
+    { name: "Jumlah", labels: chartLabels, values: top10.map((r) => r.total) },
+  ];
 
   slide.addChart(pptx.charts.BAR, chartData, {
     x: 0.5,
@@ -555,7 +556,7 @@ function addParetoSlide(
     catLabelFontSize: 9,
     valLabelFontSize: 9,
     valGridLine: { style: "none" },
-    catGridLine: { style: "dotted", color: C.border },
+    catGridLine: { style: "dot", color: C.border },
   });
 
   // Table: top 10 with details

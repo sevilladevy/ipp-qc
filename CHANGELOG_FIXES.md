@@ -98,6 +98,20 @@
 
 <!-- ENTRI BARU DI BAWAH BARIS INI -->
 
+### Fix #12 — KPI export crash `Cannot read properties of undefined (reading 'length')`: flat object chart data instead of `{labels, values}` series
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-17 |
+| **File** | `src/lib/powerpoint-export.ts` |
+| **Masalah** | KPI export still crashed after Fix #11 with `Cannot read properties of undefined (reading 'length')` deep inside pptxgenjs `addChartDefinition`, plus `Warning: chart.gridLine.style options: solid, dash, dot`. Chart type enum was now right (`charts.BAR`) but the data shape was v3-style flat objects (`[{name, "Qty Check": n, ...}]`) — v4 requires multi-series `[{name, labels: [...], values: [...]}]`. Library tried `.length` on a missing `labels` array. |
+| **Akar** | v3 accepted row-oriented objects; v4 `addChart` expects each series with explicit `labels` + `values` arrays (confirmed in `dist/pptxgen.cjs.js` docblock + gridline validator source). Also `catGridLine.style: "dotted"` is invalid in v4 (valid: `solid`/`dash`/`dot`) — only warned, didn't crash. |
+| **Fix** | Trend chart → 3 series (`Qty Check`, `Yield %`, `NG Rate %`) sharing one `labels` array. Pareto chart → 1 series (`Jumlah`) with its own labels. `catGridLine.style` `"dotted"` → `"dot"`. |
+| **Verifikasi** | Real `writeFile` probe with both chart shapes → `CHART EXPORT OK`, no warnings. `npm test` — 43/43 passed. |
+| **Pelajaran** | Major-version upgrades change data shapes, not just enum names — read the lib's own docblock/source when the crash is inside the library. A 10-line `writeFile` probe catches both crash + warning locally. |
+| **Log Keyword** | KPI export failed, reading length, addChartDefinition, labels values series, gridLine dotted warning |
+| **Deploy** | PENDING verifikasi |
+
 ### Fix #11 — KPI export crash `Cannot read properties of undefined (reading 'column')`: `pptx.ChartsType` doesn't exist in pptxgenjs v4
 
 | Field | Value |
