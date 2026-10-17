@@ -98,6 +98,20 @@
 
 <!-- ENTRI BARU DI BAWAH BARIS INI -->
 
+### Fix #11 — KPI export crash `Cannot read properties of undefined (reading 'column')`: `pptx.ChartsType` doesn't exist in pptxgenjs v4
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-17 |
+| **File** | `src/lib/powerpoint-export.ts` |
+| **Masalah** | `exportToKpiMonthlyPptx` crashed with `Cannot read properties of undefined (reading 'column')` inside pptxgenjs: code called `slide.addChart(pptx.ChartsType.column/bar, ...)`, but `pptx.ChartsType` is `undefined` in pptxgenjs v4 (`^4.0.1`). Surfaced after Fix #10 — server now returns data, then client crashed rendering charts. |
+| **Akar** | Wrong API name for the installed major version: v4 exposes chart types as `pptx.charts.BAR` (etc.), not `pptx.ChartsType.*`. Verified at runtime: instance has `charts: {AREA, BAR, BAR3D, ...}`, no `TYPE`, no `ChartsType`. TS `Presentation` namespace errors in this file are pre-existing (6 lines before and after fix). |
+| **Fix** | Both `addChart` calls → `pptx.charts.BAR` (trend column chart + pareto bar chart). |
+| **Verifikasi** | `npm test` — 43/43 passed. Runtime probe confirms `pptx.charts.BAR === "bar"` and `addChart` is a function. |
+| **Pelajaran** | Check the installed major version's API before using chart/export helpers — v3→v4 renamed chart type accessors. A runtime probe (`node -e`) settles it faster than docs. |
+| **Log Keyword** | KPI export failed, reading column, ChartsType undefined, pptxgenjs v4, charts.BAR |
+| **Deploy** | PENDING verifikasi |
+
 ### Fix #10 — KPI export crash `detailsByReportId.get is not a function`: raw `details` array passed where `Map` expected
 
 | Field | Value |

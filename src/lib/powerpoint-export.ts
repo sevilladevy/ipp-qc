@@ -405,7 +405,7 @@ function addTrendSlide(
     "NG Rate %": d.ngRate,
   }));
 
-  slide.addChart(pptx.ChartsType.column, chartData, {
+  slide.addChart(pptx.charts.BAR, chartData, {
     x: 0.5,
     y: 1.0,
     w: 7.5,
@@ -542,7 +542,7 @@ function addParetoSlide(
     "Cum %": r.cumPct,
   }));
 
-  slide.addChart(pptx.ChartsType.bar, chartData, {
+  slide.addChart(pptx.charts.BAR, chartData, {
     x: 0.5,
     y: 1.3,
     w: 7.0,
