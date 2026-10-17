@@ -430,10 +430,8 @@ function addTrendSlide(
       dataLabelPosition: "outEnd",
       catLabelFontSize: 9,
       valLabelFontSize: 9,
-      valAxes: [
-        { showValAxisTitle: true, valAxisTitle: "Qty Check" },
-        { showValAxisTitle: true, valAxisTitle: "%", secondaryValAxis: true },
-      ],
+      showValAxisTitle: true,
+      valAxisTitle: "Qty Check vs %",
     },
   );
 

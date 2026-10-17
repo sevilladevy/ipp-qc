@@ -98,6 +98,20 @@
 
 <!-- ENTRI BARU DI BAWAH BARIS INI -->
 
+### Fix #16 — PPTX corrupt saat dibuka: `valAxes` custom buat axis ID silang yang tidak ada
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-17 |
+| **File** | `src/lib/powerpoint-export.ts` |
+| **Masalah** | User: file PPTX terunduh tapi corrupt saat dibuka di PowerPoint. Setelah Fix #15, chart trend (combo kolom+garis) dihasilkan dengan `valAxes` ganda custom. Validasi ZIP/XML menunjukkan `crossAx` referensi ke axis ID `2094734555` yang tidak ada di `axId` → PowerPoint menolak membuka file. |
+| **Akar** | Opsi `valAxes: [{...}, {...secondaryValAxis: true}]` di `addChart` di pptxgenjs v4.0.1 tidak di-generate XML axis sekunder dengan benar — axis sekunder dapat `crossAx` pointing ke ID yang tidak terdaftar. File ZIP tetap bisa diekstrak tapi chart XML struktural rusak. |
+| **Fix** | Hapus `valAxes` custom dari `addChart`. Axis sekunder tetap aktif via `secondaryValAxis: true` pada tipe LINE (library generate sendiri). Title axis pakai satu `valAxisTitle: "Qty Check vs %"` untuk prima. |
+| **Verifikasi** | Probe `writeFile` 9-slide asli: semua 6 chart XML tidak lagi punya dangling `crossAx` → `ALL CHARTS VALID`. File dapat diekstrak dan chart1.xml struktural OK. `npm test` — 43/43 passed. |
+| **Pelajaran** | Jangan percaya opsi opsi yang belum teruji di library — validasi XML chart langsung (axId vs crossAx) lebih cepat daripada menebak dari konsol PowerPoint. |
+| **Log Keyword** | PPTX corrupt, valAxes dangling crossAx, chart XML invalid, secondary axis |
+| **Deploy** | PENDING verifikasi |
+
 ### Fix #15 — Trend chart is now a true combo: Qty Check Clustered Column + Yield/NG lines on secondary axis
 
 | Field | Value |
