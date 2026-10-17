@@ -2,7 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
 
-const BASE_URL = process.env.E2E_BASE_URL || "http://127.0.0.1:5173";
+const PORT = Number(process.env.E2E_PORT ?? process.env.VITE_DEV_PORT ?? 4713);
+const BASE_URL = process.env.E2E_BASE_URL || `http://127.0.0.1:${PORT}`;
 const EMAIL = process.env.E2E_EMAIL;
 const PASSWORD = process.env.E2E_PASSWORD;
 
