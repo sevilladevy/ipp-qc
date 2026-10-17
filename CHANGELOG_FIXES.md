@@ -223,3 +223,17 @@
 | **Pelajaran** | Never import `@/integrations/supabase/client` from a module reachable by a server function. Shared data helpers must take the client as a parameter so client/server each pass the right one. |
 | **Log Keyword** | auth-middleware server request rejected, reading 'from', getDashboardData, fetchDefectDetailsByReportIds, browser client on server, shared query helper |
 | **Deploy** | PENDING verifikasi |
+
+### Fix #17 — Dashboard UX: rename export button + splash screen while fetching data
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-17 |
+| **File** | `src/routes/index.tsx` |
+| **Masalah** | Tombol export PPTX masih menampilkan teks campuran bahasa (`KPI报告` / `导出KPI月度报告(PPTX)`) yang tidak konsisten dengan UI Indonesia. Selain itu, saat fetch data dashboard (initial load atau refetch filter) tidak ada indikasi visual bahwa sistem sedang memuat — user tidak tahu apakah data masih loading atau sudah gagal. |
+| **Akar** | Teks tombol tidak pernah ditarik ke Bahasa Indonesia setelah refactor awal. Tidak ada overlay splash/loading yang mencakup seluruh konten saat `baseQuery.isLoading` atau `baseQuery.isRefetching` aktif (hanya Skeleton di KPI cards dan spinner kecil di header). |
+| **Fix** | Rename tombol export menjadi `Download PPTX Report` (teks + title attribute). Tambah splash screen overlay (`fixed inset-0 z-50`, backdrop blur, spinner + "Memuat data dashboard…") yang muncul saat `baseQuery.isLoading || baseQuery.isRefetching`. KPI cards tetap pakai Skeleton untuk detail per-kartu. |
+| **Verifikasi** | `npm test` — 43/43 passed. `npx tsc --noEmit` — no new errors on `src/routes/index.tsx`. |
+| **Pelajaran** | Konsistensi bahasa UI penting untuk UX; splash screen mengurangi perceived loading time dan mencegah user klik berulang saat data masih fetching. |
+| **Log Keyword** | Download PPTX Report, splash screen, baseQuery isLoading, isRefetching, dashboard UX |
+| **Deploy** | PENDING verifikasi |

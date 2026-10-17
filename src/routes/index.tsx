@@ -562,6 +562,14 @@ function Dashboard() {
           title="Dashboard"
           description={format(new Date(), "EEEE, dd MMMM yyyy", { locale: idLocale })}
         />
+        {(baseQuery.isLoading || baseQuery.isRefetching) && (
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
+            <RefreshCw className="h-8 w-8 animate-spin text-primary mb-2" />
+            <p className="text-sm font-medium text-muted-foreground">
+              Memuat data dashboard…
+            </p>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           {baseQuery.isRefetching && (
             <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
@@ -573,14 +581,14 @@ function Dashboard() {
             className="btn btn-sm btn-primary"
             onClick={handleExportKpiPptx}
             disabled={kpiExporting || baseQuery.isLoading}
-            title="导出KPI月度报告(PPTX)"
+            title="Download PPTX Report"
           >
             {kpiExporting ? (
               <RefreshCw className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Download className="h-3.5 w-3.5" />
             )}
-            <span className="ml-1">KPI报告</span>
+            <span className="ml-1">Download PPTX Report</span>
           </button>
         </div>
       </div>
