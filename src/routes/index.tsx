@@ -359,6 +359,10 @@ function Dashboard() {
         defectPareto: result.defectPareto,
         mejaRows: result.mejaRows,
         shiftRows: result.shiftRows,
+        inspectorRows: result.inspectorRows,
+        partLossRows: result.partLossRows,
+        scatterPoints: result.scatterPoints,
+        productTrend: result.productTrend,
       };
       await exportToKpiMonthlyPptx(pptxData);
     } catch (err) {

@@ -737,7 +737,173 @@ function addComparisonSlide(
   }
 }
 
-// ─── 6. Closing slide ──────────────────────────────────────────────────────
+// ─── 6. Inspector performance (table + NG Rate bar chart) ───────────────────
+
+function addInspectorSlide(
+  pptx: pptxgen.Presentation,
+  inspectorRows: (AggregatedReportRow & { avg_qty_per_report: number })[],
+) {
+  const slide = pptx.addSlide();
+  addSlideHeader(slide, "Inspector Performance");
+  addSlideFooter(slide, "Inspector");
+
+  const top = inspectorRows.slice(0, 8);
+  if (!top.length) {
+    slide.addText("Belum ada data inspector pada periode ini.", {
+      x: 0.5, y: 1.5, w: 12.3, h: 0.5, fontSize: 12, color: C.grayText, fontFace: "Calibri",
+    });
+    return;
+  }
+
+  const header = ["Inspector", "Qty Check", "OK", "NG", "NG Rate %", "Reports"];
+  const tableRows = [
+    header.map((h) => ({
+      text: h,
+      options: { bold: true, color: C.white, fill: { color: C.navy }, fontSize: 9 },
+    })),
+    ...top.map((r, i) =>
+      [
+        String(r.key).length > 16 ? String(r.key).substring(0, 16) + "…" : String(r.key),
+        fmtNum(r.qty_check), fmtNum(r.ok), fmtNum(r.ng),
+        (r.ngRate * 100).toFixed(1) + "%", fmtNum(r.reports),
+      ].map((c, j) => ({
+        text: c,
+        options: {
+          fontSize: 8, color: C.darkText,
+          fill: { color: i % 2 === 0 ? C.white : C.grayBg },
+          align: (j === 0 ? "left" : "right") as "left" | "right",
+        },
+      })),
+    ),
+  ];
+  slide.addTable(tableRows, {
+    x: 0.5, y: 1.0, w: 6.5,
+    border: { pt: 1, color: C.border }, valign: "middle", margin: 0.04, rowH: 0.3,
+  });
+
+  const names = top.slice(0, 6).map((r) =>
+    String(r.key).length > 14 ? String(r.key).substring(0, 14) + "…" : String(r.key),
+  );
+  slide.addChart(
+    pptx.charts.BAR,
+    [{
+      name: "NG Rate %", labels: names,
+      values: top.slice(0, 6).map((r) => Number((r.ngRate * 100).toFixed(1))),
+    }],
+    {
+      x: 7.3, y: 1.0, w: 5.5, h: 4.8, barDir: "bar",
+      showLegend: false, showValue: true, dataLabelFontSize: 8,
+    },
+  );
+}
+
+// ─── 7. Scatter NG vs Qty Check + Product NG trend ──────────────────────────
+
+function addScatterProductSlide(
+  pptx: pptxgen.Presentation,
+  scatterPoints: { qty_check: number; ng: number; meja: number }[],
+  productTrend: { labels: string[]; series: { name: string; values: number[] }[] },
+) {
+  const slide = pptx.addSlide();
+  addSlideHeader(slide, "Scatter & Product Trend");
+  addSlideFooter(slide, "Scatter + Product");
+
+  if (scatterPoints.length) {
+    const pts = scatterPoints.slice(0, 300);
+    slide.addChart(
+      pptx.charts.SCATTER,
+      [{
+        name: "NG vs Qty Check",
+        labels: pts.map((p) => p.qty_check),
+        values: pts.map((p) => p.ng),
+      }],
+      {
+        x: 0.5, y: 1.0, w: 6.0, h: 4.8,
+        showLegend: false, showTitle: true, title: "Scatter NG vs Qty Check",
+        titleFontSize: 11, valAxisTitle: "NG", catAxisTitle: "Qty Check",
+      },
+    );
+  } else {
+    slide.addText("Belum ada data scatter pada periode ini.", {
+      x: 0.5, y: 1.5, w: 6.0, h: 0.5, fontSize: 12, color: C.grayText, fontFace: "Calibri",
+    });
+  }
+
+  if (productTrend.series.length && productTrend.labels.length) {
+    slide.addChart(
+      pptx.charts.LINE,
+      productTrend.series.slice(0, 6).map((s) => ({
+        name: s.name, labels: productTrend.labels, values: s.values,
+      })),
+      {
+        x: 6.8, y: 1.0, w: 6.0, h: 4.8,
+        showLegend: true, legendPos: "b", showValue: false,
+        showTitle: true, title: "Product NG Rate Trend (%)",
+        titleFontSize: 11, lineSmooth: true,
+      },
+    );
+  } else {
+    slide.addText("Belum ada tren produk pada periode ini.", {
+      x: 6.8, y: 1.5, w: 6.0, h: 0.5, fontSize: 12, color: C.grayText, fontFace: "Calibri",
+    });
+  }
+}
+
+// ─── 8. Part Loss ranking ───────────────────────────────────────────────────
+
+function addPartLossSlide(pptx: pptxgen.Presentation, partLossRows: AggregatedReportRow[]) {
+  const slide = pptx.addSlide();
+  addSlideHeader(slide, "Part Loss Ranking");
+  addSlideFooter(slide, "Part Loss");
+
+  const top = partLossRows.slice(0, 12);
+  if (!top.length) {
+    slide.addText("Belum ada data part pada periode ini.", {
+      x: 0.5, y: 1.5, w: 12.3, h: 0.5, fontSize: 12, color: C.grayText, fontFace: "Calibri",
+    });
+    return;
+  }
+
+  const header = ["Part", "Qty Check", "NG", "NG Rate %", "Reports"];
+  const tableRows = [
+    header.map((h) => ({
+      text: h,
+      options: { bold: true, color: C.white, fill: { color: C.navy }, fontSize: 9 },
+    })),
+    ...top.map((r, i) =>
+      [
+        String(r.key).length > 22 ? String(r.key).substring(0, 22) + "…" : String(r.key),
+        fmtNum(r.qty_check), fmtNum(r.ng),
+        (r.ngRate * 100).toFixed(1) + "%", fmtNum(r.reports),
+      ].map((c, j) => ({
+        text: c,
+        options: {
+          fontSize: 8, color: C.darkText,
+          fill: { color: i % 2 === 0 ? C.white : C.grayBg },
+          align: (j === 0 ? "left" : "right") as "left" | "right",
+        },
+      })),
+    ),
+  ];
+  slide.addTable(tableRows, {
+    x: 0.5, y: 1.0, w: 6.5,
+    border: { pt: 1, color: C.border }, valign: "middle", margin: 0.04, rowH: 0.3,
+  });
+
+  const names = top.slice(0, 8).map((r) =>
+    String(r.key).length > 14 ? String(r.key).substring(0, 14) + "…" : String(r.key),
+  );
+  slide.addChart(
+    pptx.charts.BAR,
+    [{ name: "NG", labels: names, values: top.slice(0, 8).map((r) => r.ng) }],
+    {
+      x: 7.3, y: 1.0, w: 5.5, h: 4.8, barDir: "bar",
+      showLegend: false, showValue: true, dataLabelFontSize: 8,
+    },
+  );
+}
+
+// ─── 9. Closing slide ──────────────────────────────────────────────────────
 
 function addClosingSlide(pptx: pptxgen.Presentation, monthYear: string) {
   const slide = pptx.addSlide();
@@ -850,10 +1016,30 @@ export interface KpiMonthlyPptxData {
   }[];
   mejaRows: AggregatedReportRow[];
   shiftRows: AggregatedReportRow[];
+  inspectorRows: (AggregatedReportRow & { avg_qty_per_report: number })[];
+  partLossRows: AggregatedReportRow[];
+  scatterPoints: { qty_check: number; ng: number; meja: number }[];
+  productTrend: {
+    labels: string[];
+    series: { name: string; values: number[] }[];
+  };
 }
 
 export async function exportToKpiMonthlyPptx(opts: KpiMonthlyPptxData): Promise<string> {
-  const { monthYear, from, to, totals, trend, defectPareto, mejaRows, shiftRows } = opts;
+  const {
+    monthYear,
+    from,
+    to,
+    totals,
+    trend,
+    defectPareto,
+    mejaRows,
+    shiftRows,
+    inspectorRows,
+    partLossRows,
+    scatterPoints,
+    productTrend,
+  } = opts;
 
   const pptx = new pptxgen();
   pptx.layout = "LAYOUT_WIDE";
@@ -877,7 +1063,16 @@ export async function exportToKpiMonthlyPptx(opts: KpiMonthlyPptxData): Promise<
   // Slide 5: Meja & Shift comparison
   addComparisonSlide(pptx, mejaRows, shiftRows);
 
-  // Slide 6: Closing
+  // Slide 6: Inspector performance (table + NG Rate bar chart)
+  addInspectorSlide(pptx, inspectorRows);
+
+  // Slide 7: Scatter NG vs Qty Check + Product NG trend
+  addScatterProductSlide(pptx, scatterPoints, productTrend);
+
+  // Slide 8: Part Loss ranking
+  addPartLossSlide(pptx, partLossRows);
+
+  // Slide 9: Closing
   addClosingSlide(pptx, monthYear);
 
   const filename = `KPI_Monthly_Report_${monthYear.replace(/\s/g, "_")}.pptx`;

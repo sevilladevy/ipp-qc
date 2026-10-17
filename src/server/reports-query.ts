@@ -9,6 +9,7 @@ import {
   aggregateBy,
   buildTrend,
   buildDefectPareto,
+  buildProductNgTrend,
   enrichReports,
   buildProfileLookup,
 } from "@/lib/management";
@@ -119,6 +120,15 @@ export interface KpiMonthlyServerData {
   defectPareto: { key: string; name: string; total: number; pct: number; cumPct: number }[];
   mejaRows: import("@/lib/management").AggregatedReportRow[];
   shiftRows: import("@/lib/management").AggregatedReportRow[];
+  inspectorRows: (import("@/lib/management").AggregatedReportRow & {
+    avg_qty_per_report: number;
+  })[];
+  partLossRows: import("@/lib/management").AggregatedReportRow[];
+  scatterPoints: { qty_check: number; ng: number; meja: number }[];
+  productTrend: {
+    labels: string[];
+    series: { name: string; values: number[] }[];
+  };
 }
 
 export const getKpiMonthlyData = createServerFn({ method: "POST" })
@@ -191,6 +201,35 @@ export const getKpiMonthlyData = createServerFn({ method: "POST" })
     const defectPareto = buildDefectPareto(filtered, detailsByReportId);
     const mejaRows = aggregateBy(filtered, "no_meja");
     const shiftRows = aggregateBy(filtered, "shift");
+    // Mirror dashboard client aggregations (index.tsx) so PPTX covers all visuals
+    const inspectorRows = aggregateBy(filtered, "inspector_name")
+      .filter((row) => row.key !== "Unknown")
+      .map((row) => ({
+        ...row,
+        avg_qty_per_report: row.reports > 0 ? row.qty_check / row.reports : 0,
+      }))
+      .sort((a, b) => b.ngRate - a.ngRate);
+    const partLossRows = aggregateBy(filtered, "part_name").sort(
+      (a, b) => b.ngRate - a.ngRate,
+    );
+    const scatterPoints = filtered.map((row) => ({
+      qty_check: row.qty_check,
+      ng: row.total_ng,
+      meja: row.no_meja,
+    }));
+    const productTrendRaw = buildProductNgTrend(filtered, 6);
+    const productLabels = (productTrendRaw.chartData as { date: string }[]).map((d) =>
+      formatDateShort(d.date),
+    );
+    const productTrend = {
+      labels: productLabels,
+      series: productTrendRaw.series.map((s) => ({
+        name: String(s.key).length > 20 ? String(s.key).substring(0, 20) + "…" : String(s.key),
+        values: (productTrendRaw.chartData as Record<string, unknown>[]).map((d) =>
+          Number(d[s.key] ?? 0),
+        ),
+      })),
+    };
 
     // monthYear label
     const parsedFrom = new Date(from);
@@ -219,5 +258,32 @@ export const getKpiMonthlyData = createServerFn({ method: "POST" })
       defectPareto,
       mejaRows,
       shiftRows,
+      inspectorRows,
+      partLossRows,
+      scatterPoints,
+      productTrend,
     } satisfies KpiMonthlyServerData;
   });
+
+// Short "dd MMM" label in Indonesian month abbreviations (matches client chart labels)
+function formatDateShort(isoDate: string): string {
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
+  const parts = isoDate.split("-");
+  if (parts.length !== 3) return isoDate;
+  const day = parts[2].padStart(2, "0");
+  const month = months[Number(parts[1]) - 1] ?? parts[1];
+  return `${day} ${month}`;
+}

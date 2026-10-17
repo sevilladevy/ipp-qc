@@ -98,6 +98,20 @@
 
 <!-- ENTRI BARU DI BAWAH BARIS INI -->
 
+### Fix #14 — PPTX now covers all dashboard visuals: Inspector, Scatter, Product Trend, Part Loss slides
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-17 |
+| **File** | `src/server/reports-query.ts`, `src/lib/powerpoint-export.ts`, `src/routes/index.tsx` |
+| **Masalah** | User: "Kenapa tidak semua chart data dan table tidak di generate ke pptx?" Audit: dashboard punya 10 visual, PPTX hanya cover 4 (trend, pareto, meja, shift). Yang hilang: Inspector Performance (tabel+bar), Scatter NG vs Qty Check, Product NG Rate Trend, Part Loss (tabel). Server `getKpiMonthlyData` juga hanya return 5 dataset — data untuk 4 visual hilang tidak tersedia. |
+| **Akar** | Export PPTX ditulis lebih dulu hanya untuk ringkasan bulanan (6 slide); agregasi tambahan dashboard (per inspector/part, scatter points, product trend) tidak pernah dibawa ke server fn. |
+| **Fix** | Server: tambah `inspectorRows` (aggregateBy inspector_name, filter Unknown, avg_qty_per_report, sort ngRate — mirror index.tsx), `partLossRows` (aggregateBy part_name sort ngRate), `scatterPoints` (qty_check/ng/meja per report), `productTrend` (labels + series dari `buildProductNgTrend`, format labels-v4). PPTX 6→9 slide: (6) Inspector (tabel 8 + bar NG Rate), (7) Scatter (SCATTER chart, cap 300 pts) + Product Trend (LINE chart 6 seri), (8) Part Loss (tabel 12 + bar NG). Caller teruskan 4 field baru. Semua chart baru `showValue: true` kecuali line trend. |
+| **Verifikasi** | Real `writeFile` probe dengan data dummy → `FULL 9-SLIDE EXPORT OK`. `npm test` — 43/43 passed. |
+| **Pelajaran** | Kalau export harus "lengkap seperti dashboard", agregasi server harus mirror agregasi client satu-per-satu — jangan kira-kira. Scatter di pptxgen v4 pakai `charts.SCATTER` dengan labels=x, values=y. |
+| **Log Keyword** | PPTX missing charts, inspector slide, scatter product slide, part loss slide, 9-slide export |
+| **Deploy** | PENDING verifikasi |
+
 ### Fix #13 — Show values on all KPI export charts (`showValue: true`)
 
 | Field | Value |
