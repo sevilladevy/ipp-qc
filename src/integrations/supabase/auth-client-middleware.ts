@@ -18,45 +18,42 @@ function isUnauthorizedError(error: unknown): boolean {
 }
 
 export const attachAuthHeader = createMiddleware({ type: "function" }).client(async ({ next }) => {
-  // Normal Supabase auth - try to get and refresh session
   try {
     const {
       data: { session },
       error,
     } = await supabase.auth.getSession();
 
-    // If no session or error, send empty headers
     if (error || !session) {
-      return next({}).catch(handleRequestError);
+      return next().catch(handleRequestError);
     }
 
-    // Check if token is expired
     const expiresAt = session.expires_at;
     const now = Math.floor(Date.now() / 1000);
     const isExpired = expiresAt ? now >= expiresAt : false;
 
+    let token = session.access_token;
+
     if (isExpired) {
-      // Try to refresh the token
       const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
 
       if (refreshError || !refreshData.session) {
-        // Refresh failed - clear session and don't send auth header
         console.warn("Session expired and refresh failed:", refreshError?.message);
-        return next({}).catch(handleRequestError);
+        return next().catch(handleRequestError);
       }
-
-      return next({
-        headers: { Authorization: `Bearer ${refreshData.session.access_token}` },
-      }).catch(handleRequestError);
+      token = refreshData.session.access_token;
     }
 
-    // Token is still valid
     return next({
-      headers: session.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+      fetch: async (url, init) => {
+        const headers = new Headers(init?.headers);
+        if (token) headers.set("Authorization", `Bearer ${token}`);
+        return fetch(url, { ...init, headers });
+      },
     }).catch(handleRequestError);
   } catch (e) {
     console.error("Auth attach error:", e);
-    return next({}).catch(handleRequestError);
+    return next().catch(handleRequestError);
   }
 });
 
