@@ -117,7 +117,7 @@ function LaporanPage() {
       if (profileError) throw profileError;
 
       const ids = (reports ?? []).map((row) => row.id);
-      const details = await fetchDefectDetailsByReportIds(ids);
+      const details = await fetchDefectDetailsByReportIds(supabase, ids);
       return { reports: reports ?? [], details: details ?? [], profiles: profiles ?? [] };
     },
     staleTime: 60_000,

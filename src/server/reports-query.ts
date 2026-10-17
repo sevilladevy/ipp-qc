@@ -97,7 +97,7 @@ export const getDashboardData = createServerFn({ method: "POST" })
     const reports = reportsResult.data ?? [];
     const profiles = profilesResult.data ?? [];
     const reportIds = reports.map((row) => row.id);
-    const details = await fetchDefectDetailsByReportIds(reportIds);
+    const details = await fetchDefectDetailsByReportIds(ctx.supabase, reportIds);
 
     return { reports, details, profiles };
   });
@@ -154,7 +154,7 @@ export const getKpiMonthlyData = createServerFn({ method: "POST" })
     const reports = reportsResult.data ?? [];
     const profiles = profilesResult.data ?? [];
     const reportIds = reports.map((row) => row.id);
-    const details = await fetchDefectDetailsByReportIds(reportIds);
+    const details = await fetchDefectDetailsByReportIds(ctx.supabase, reportIds);
 
     const profilesById = buildProfileLookup(profiles);
     const enriched = enrichReports({ reports, detailsByReportId: details, profilesById });

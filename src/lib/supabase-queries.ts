@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database, Tables } from "@/integrations/supabase/types";
 import { DEFECT_COLUMNS_QUERY } from "@/lib/format";
 import type { ManagementFilters } from "@/lib/management";
 
@@ -17,7 +18,16 @@ export function buildReportQueryFilters(filters: ManagementFilters) {
   return conditions;
 }
 
+/**
+ * Fetches defect detail rows for a set of report ids.
+ *
+ * The caller MUST pass its own Supabase client: the authenticated
+ * `ctx.supabase` inside server functions, or the browser client inside hooks.
+ * This module is shared by both environments, and the browser client
+ * (`@/integrations/supabase/client`) is unavailable on the server.
+ */
 export async function fetchDefectDetailsByReportIds(
+  client: SupabaseClient<Database>,
   reportIds: string[],
 ): Promise<Tables<"inspection_defect_details">[]> {
   const uniqueIds = [...new Set(reportIds)];
@@ -30,7 +40,7 @@ export async function fetchDefectDetailsByReportIds(
 
   const responses = await Promise.all(
     chunks.map((chunk) =>
-      supabase
+      client
         .from("inspection_defect_details")
         .select(`id,report_id,${DEFECT_COLUMNS_QUERY},created_at`)
         .in("report_id", chunk),

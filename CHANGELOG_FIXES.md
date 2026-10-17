@@ -97,3 +97,17 @@
 | **Deploy** | PENDING verifikasi |
 
 <!-- ENTRI BARU DI BAWAH BARIS INI -->
+
+### Fix #8 — Server fn crash `Cannot read properties of undefined (reading 'from')`: shared defect-detail query used the browser-only Supabase client on the server
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-17 |
+| **File** | `src/lib/supabase-queries.ts`, `src/server/reports-query.ts`, `src/hooks/use-analytics-data.ts`, `src/hooks/useLogManagement.ts`, `src/routes/laporan.tsx` |
+| **Masalah** | Dashboard/analytics server requests rejected with `{unauthorized: false, message: "Cannot read properties of undefined (reading 'from')"}`, logged by `auth-client-middleware.ts`'s `handleRequestError`, which rethrew as a non-auth error. Occurred on every `getDashboardData` / `getKpiMonthlyData` call (regression from Fix #7). |
+| **Akar** | `fetchDefectDetailsByReportIds()` (in `lib/supabase-queries.ts`, shared by client and server) called the module-level `supabase` imported from `@/integrations/supabase/client` — a browser-only module. Fix #7 began invoking this function inside server functions, where that import has no browser env: the server build emits an unusable stub (`dist/server/assets/client-*.js` throws / resolves to undefined), so `supabase` was `undefined` and `undefined.from(...)` threw. |
+| **Fix** | Changed `fetchDefectDetailsByReportIds(client, reportIds)` to require the caller's Supabase client. Server fns pass the authenticated `ctx.supabase` (enforces RLS, correct env); browser hooks/route pass the browser `supabase`. Removed the browser-client import from the shared module; added `SupabaseClient<Database>` / `Tables` type imports (the latter was previously referenced without an import). |
+| **Verifikasi** | Repro: server bundle for `supabase-queries` no longer imports `client-*.js` (was importing the throwing stub). `npm run build` — clean. `npm run lint` — 0 errors. `npm test` — 43/43 passed. |
+| **Pelajaran** | Never import `@/integrations/supabase/client` from a module reachable by a server function. Shared data helpers must take the client as a parameter so client/server each pass the right one. |
+| **Log Keyword** | auth-middleware server request rejected, reading 'from', getDashboardData, fetchDefectDetailsByReportIds, browser client on server, shared query helper |
+| **Deploy** | PENDING verifikasi |

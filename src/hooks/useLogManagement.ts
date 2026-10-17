@@ -70,7 +70,10 @@ export function useLogManagement() {
       if (profileError) throw profileError;
 
       const reportRows = reports ?? [];
-      const details = await fetchDefectDetailsByReportIds(reportRows.map((row) => row.id));
+      const details = await fetchDefectDetailsByReportIds(
+        supabase,
+        reportRows.map((row) => row.id),
+      );
       const detailsByReportId = new Map(details.map((detail) => [detail.report_id, detail]));
       const profilesById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
 
