@@ -98,6 +98,20 @@
 
 <!-- ENTRI BARU DI BAWAH BARIS INI -->
 
+### Fix #15 — Trend chart is now a true combo: Qty Check Clustered Column + Yield/NG lines on secondary axis
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-17 |
+| **File** | `src/lib/powerpoint-export.ts` |
+| **Masalah** | User: chart trend harus combo — `Qty Check` = Clustered Column (primary axis), `Yield %` + `NG Rate %` = Line di secondary axis. Sebelumnya ketiga seri digambar sebagai satu tipe BAR dengan satu axis, sehingga garis % terkompresi skala Qty. |
+| **Akar** | `addChart` dipanggil single-type `charts.BAR` untuk semua seri. pptxgenjs v4 mendukung multi-chart via array `_type` (`[{type, data, options}]`) dengan `secondaryValAxis: true` per tipe + `valAxes` ganda — pola ini dikonfirmasi dari source `dist/pptxgen.cjs.js`. |
+| **Fix** | Trend slide → multi-chart: `{type: BAR, data: [Qty Check], options: {barDir: col, barGrouping: clustered}}` + `{type: LINE, data: [Yield %, NG Rate %], options: {secondaryValAxis: true, lineSmooth: true}}`, dengan `valAxes` ganda (Qty Check primer, % sekunder). `showValue` dipertahankan di semua seri. |
+| **Verifikasi** | Real `writeFile` probe combo → `COMBO EXPORT OK`. `npm test` — 43/43 passed. |
+| **Pelajaran** | Combo chart di pptxgenjs v4 = array `{type, data, options}` + `secondaryValAxis` pada tipe garis + `valAxes` ganda — bukan dua `addChart` bertumpuk (itu menimpa posisi). |
+| **Log Keyword** | combo chart, secondary axis, clustered column, Yield NG lines, multi-chart valAxes |
+| **Deploy** | PENDING verifikasi |
+
 ### Fix #14 — PPTX now covers all dashboard visuals: Inspector, Scatter, Product Trend, Part Loss slides
 
 | Field | Value |

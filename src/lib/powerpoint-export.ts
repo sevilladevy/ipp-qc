@@ -397,31 +397,45 @@ function addTrendSlide(
     return;
   }
 
-  // Chart data for pptxgen (multi-series: {name, labels, values}[])
+  // Combo chart: Qty Check = Clustered Column (primary axis),
+  // Yield % + NG Rate % = Line on secondary axis (pptxgenjs v4 multi-chart)
   const labels = trend.map((d) => format(new Date(d.date), "dd MMM"));
-  const chartData = [
-    { name: "Qty Check", labels, values: trend.map((d) => d.qty_check) },
-    { name: "Yield %", labels, values: trend.map((d) => d.passRate) },
-    { name: "NG Rate %", labels, values: trend.map((d) => d.ngRate) },
-  ];
-
-  slide.addChart(pptx.charts.BAR, chartData, {
-    x: 0.5,
-    y: 1.0,
-    w: 7.5,
-    h: 3.5,
-    chartColors: [C.accent, C.success, C.danger],
-    showTitle: false,
-    showLegend: true,
-    legendPos: "b",
-    showValue: true,
-    dataLabelFontSize: 8,
-    dataLabelPosition: "outEnd",
-    catLabelFontSize: 9,
-    valLabelFontSize: 9,
-    valAxisMaxValue: 100,
-    valAxisMinValue: 0,
-  });
+  slide.addChart(
+    [
+      {
+        type: pptx.charts.BAR,
+        data: [{ name: "Qty Check", labels, values: trend.map((d) => d.qty_check) }],
+        options: { barDir: "col", barGrouping: "clustered" },
+      },
+      {
+        type: pptx.charts.LINE,
+        data: [
+          { name: "Yield %", labels, values: trend.map((d) => d.passRate) },
+          { name: "NG Rate %", labels, values: trend.map((d) => d.ngRate) },
+        ],
+        options: { secondaryValAxis: true, lineSmooth: true },
+      },
+    ],
+    {
+      x: 0.5,
+      y: 1.0,
+      w: 7.5,
+      h: 3.5,
+      chartColors: [C.accent, C.success, C.danger],
+      showTitle: false,
+      showLegend: true,
+      legendPos: "b",
+      showValue: true,
+      dataLabelFontSize: 8,
+      dataLabelPosition: "outEnd",
+      catLabelFontSize: 9,
+      valLabelFontSize: 9,
+      valAxes: [
+        { showValAxisTitle: true, valAxisTitle: "Qty Check" },
+        { showValAxisTitle: true, valAxisTitle: "%", secondaryValAxis: true },
+      ],
+    },
+  );
 
   // Yield gauge on the right
   const latest = trend[trend.length - 1];
