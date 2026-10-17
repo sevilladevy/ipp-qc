@@ -237,3 +237,17 @@
 | **Pelajaran** | Konsistensi bahasa UI penting untuk UX; splash screen mengurangi perceived loading time dan mencegah user klik berulang saat data masih fetching. |
 | **Log Keyword** | Download PPTX Report, splash screen, baseQuery isLoading, isRefetching, dashboard UX |
 | **Deploy** | PENDING verifikasi |
+
+### Fix #18 — PPTX corrupt at Slide 3: trend combo chart `secondaryValAxis` + `valAxes` produced dangling axis cross-ref
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-17 |
+| **File** | `src/lib/powerpoint-export.ts` |
+| **Masalah** | User: PowerPoint reports file corrupt, error originates at Slide 3 chart (trend combo). Validating generated `chart1.xml` shows `crossAx` referencing axis ID `2094734555` that does not exist in `axId` list → PPT refuses to open. |
+| **Akar** | Fix #15 added `secondaryValAxis: true` to the LINE series + `valAxes: [{...}, {secondaryValAxis: true}]` to the multi-chart options. pptxgenjs v4.0.1 multi-chart axis generation produces dangling cross-references when `valAxes` has 2 elements — probe confirmed `valAxes-2` → CORRUPT, `valAxes-1` / no-valAxes → OK. |
+| **Fix** | Removed `secondaryValAxis: true` from LINE options and removed `valAxes` entirely. Chart now uses a single value axis for all three series (Qty Check column + Yield % + NG Rate % lines). `valAxisTitle` set to `"Qty Check / %"`. `dataLabelPosition: "outEnd"` removed (invalid for LINE/BAR in v4, silently dropped anyway). |
+| **Verifikasi** | Probe `writeFile` 9-slide real file: all 6 chart XML validated — no dangling `crossAx` → `ALL CHARTS VALID`. `npm test` — 43/43 passed. |
+| **Pelajaran** | pptxgenjs v4 multi-chart `valAxes` with 2 entries is broken (dangling axis cross-ref). Avoid until library fix; use single axis or split into separate charts. |
+| **Log Keyword** | PPTX corrupt Slide 3, trend combo chart, secondaryValAxis, valAxes dangling crossAx, chart XML invalid |
+| **Deploy** | PENDING verifikasi |

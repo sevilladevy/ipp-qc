@@ -413,7 +413,7 @@ function addTrendSlide(
           { name: "Yield %", labels, values: trend.map((d) => d.passRate) },
           { name: "NG Rate %", labels, values: trend.map((d) => d.ngRate) },
         ],
-        options: { secondaryValAxis: true, lineSmooth: true },
+        options: { lineSmooth: true },
       },
     ],
     {
@@ -427,11 +427,10 @@ function addTrendSlide(
       legendPos: "b",
       showValue: true,
       dataLabelFontSize: 8,
-      dataLabelPosition: "outEnd",
       catLabelFontSize: 9,
       valLabelFontSize: 9,
       showValAxisTitle: true,
-      valAxisTitle: "Qty Check vs %",
+      valAxisTitle: "Qty Check / %",
     },
   );
 
