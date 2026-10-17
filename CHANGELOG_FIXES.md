@@ -98,6 +98,20 @@
 
 <!-- ENTRI BARU DI BAWAH BARIS INI -->
 
+### Fix #13 — Show values on all KPI export charts (`showValue: true`)
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-17 |
+| **File** | `src/lib/powerpoint-export.ts` |
+| **Masalah** | User request: semua chart di export PPTX harus menampilkan angka (show value). Sebelumnya kedua chart (`addTrendSlide`, `addParetoSlide`) pakai `dataLabelDisplay: ["hide", ...]` sehingga batang chart tanpa angka. |
+| **Akar** | Opsi v3-style `dataLabelDisplay: ["hide"]` menyembunyikan label di semua seri. API v4 yang benar untuk menampilkan angka adalah `showValue: true` (+ `dataLabelFontSize`, `dataLabelPosition`). |
+| **Fix** | Trend chart: `showValue: true` + `dataLabelFontSize: 8` (posisi `outEnd` dipertahankan). Pareto chart: `showValue: true` + `dataLabelFontSize: 8`. |
+| **Verifikasi** | Real `writeFile` probe dengan kedua chart → `SHOWVALUE EXPORT OK`. `npm test` — 43/43 passed. |
+| **Pelajaran** | `showValue` adalah switch utama label angka di pptxgenjs v4; `dataLabelDisplay` gaya lama justru menyembunyikan semuanya. |
+| **Log Keyword** | show value charts, showValue, dataLabelDisplay hide, KPI export labels |
+| **Deploy** | PENDING verifikasi |
+
 ### Fix #12 — KPI export crash `Cannot read properties of undefined (reading 'length')`: flat object chart data instead of `{labels, values}` series
 
 | Field | Value |
