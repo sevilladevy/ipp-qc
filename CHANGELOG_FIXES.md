@@ -98,6 +98,20 @@
 
 <!-- ENTRI BARU DI BAWAH BARIS INI -->
 
+### Fix #10 — KPI export crash `detailsByReportId.get is not a function`: raw `details` array passed where `Map` expected
+
+| Field | Value |
+|---|---|
+| **Tanggal** | 2026-10-17 |
+| **File** | `src/server/reports-query.ts` |
+| **Masalah** | `getKpiMonthlyData` threw `detailsByReportId.get is not a function` on every call: `fetchDefectDetailsByReportIds()` returns a `DefectRow[]`, but `enrichReports({detailsByReportId})` and `buildDefectPareto(rows, detailsByReportId)` both expect `Map<string, DefectRow>`. Surfaced after Fix #9 unblocked the 400 — validator passed, then handler crashed on `.get()`. Client (`index.tsx`) already did `new Map(details.map(d => [d.report_id, d]))`, server side missed it. |
+| **Akar** | `getKpiMonthlyData` was written to aggregate server-side but passed the raw array straight through without the array→Map conversion the client does. TypeScript flagged it (`reports-query.ts:160/190` Map errors) but errors were buried among pre-existing middleware-typing noise. |
+| **Fix** | Build `const detailsByReportId = new Map(details.map((d) => [d.report_id, d]))` once, pass the Map to both `enrichReports` and `buildDefectPareto`. |
+| **Verifikasi** | `npm test` — 43/43 passed. `npx tsc --noEmit` — Map errors at 160/190 gone; remaining `reports-query.ts` errors pre-existing (middleware typing, shift string). |
+| **Pelajaran** | When moving client logic server-side, copy the data-shape conversions too (array→Map), not just the fetch calls. Don't ignore TS errors hiding in noisy files — the Map mismatch was signal, not noise. |
+| **Log Keyword** | detailsByReportId.get is not a function, enrichReports Map, buildDefectPareto, KPI export failed |
+| **Deploy** | PENDING verifikasi |
+
 ### Fix #9 — Dashboard 400 (`{data:}` wrapper) + master 500 (broken `beforeLoad`): callers passed payload directly, route threw unserializable Response
 
 | Field | Value |

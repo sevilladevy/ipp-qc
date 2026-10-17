@@ -155,9 +155,10 @@ export const getKpiMonthlyData = createServerFn({ method: "POST" })
     const profiles = profilesResult.data ?? [];
     const reportIds = reports.map((row) => row.id);
     const details = await fetchDefectDetailsByReportIds(ctx.supabase, reportIds);
+    const detailsByReportId = new Map(details.map((d) => [d.report_id, d]));
 
     const profilesById = buildProfileLookup(profiles);
-    const enriched = enrichReports({ reports, detailsByReportId: details, profilesById });
+    const enriched = enrichReports({ reports, detailsByReportId, profilesById });
 
     // Apply optional filters
     const filtered = enriched.filter((row) => {
@@ -187,7 +188,7 @@ export const getKpiMonthlyData = createServerFn({ method: "POST" })
     };
 
     const trend = buildTrend(filtered);
-    const defectPareto = buildDefectPareto(filtered, details);
+    const defectPareto = buildDefectPareto(filtered, detailsByReportId);
     const mejaRows = aggregateBy(filtered, "no_meja");
     const shiftRows = aggregateBy(filtered, "shift");
 
