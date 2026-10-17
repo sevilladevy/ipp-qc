@@ -25,7 +25,7 @@ type GetReportsInput = {
 export const getReports = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
   .validator((input: GetReportsInput) => {
-    if (!input.from || !input.to) {
+    if (!input || !input.from || !input.to) {
       throw new Response("Date range required", { status: 400 });
     }
     return input;
@@ -67,7 +67,7 @@ export const getReports = createServerFn({ method: "POST" })
 export const getDashboardData = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
   .validator((input: GetReportsInput) => {
-    if (!input.from || !input.to) {
+    if (!input || !input.from || !input.to) {
       throw new Response("Date range required", { status: 400 });
     }
     return input;
@@ -124,7 +124,7 @@ export interface KpiMonthlyServerData {
 export const getKpiMonthlyData = createServerFn({ method: "POST" })
   .middleware([attachAuthHeader, requireSupabaseAuth])
   .validator((input: GetReportsInput) => {
-    if (!input.from || !input.to) {
+    if (!input || !input.from || !input.to) {
       throw new Response("Date range required", { status: 400 });
     }
     return input;
